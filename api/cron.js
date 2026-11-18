@@ -1,0 +1,139 @@
+﻿const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const GH_TOKEN = process.env.GH_TOKEN;
+const REPO = 'hirasheiikh/planning-finals';
+
+function getMadridDate() {
+  const now = new Date();
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+}
+
+function decodeEntities(str) {
+  return str.replace(/&#(\d+);/g, (m, dec) => String.fromCharCode(dec))
+            .replace(/&quot;/g, '"')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>');
+}
+
+async function sendTelegram(text) {
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+  await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'Markdown' })
+  });
+}
+
+async function getGitHubFile() {
+  const url = `https://api.github.com/repos/${REPO}/contents/index.html`;
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${GH_TOKEN}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'PlanningBot'
+    }
+  });
+  if (!res.ok) throw new Error(`GitHub get failed: ${res.status}`);
+  const data = await res.json();
+  return Buffer.from(data.content, 'base64').toString('utf8');
+}
+
+module.exports = async (req, res) => {
+  const mode = req.query.mode || 'morning';
+
+  try {
+    const content = await getGitHubFile();
+
+    let doneSet = new Set();
+    const stateMatch = content.match(/<script id="state"[^>]*>(.*?)<\/script>/s);
+    if (stateMatch) {
+      try {
+        const state = JSON.parse(stateMatch[1]);
+        (state.done || []).forEach(d => doneSet.add(d));
+      } catch(e) {}
+    }
+
+    const todayStr = getMadridDate();
+    const todayDt = new Date(todayStr + 'T12:00:00Z');
+    const yestDt = new Date(todayDt.getTime() - 86400000);
+    const yestStr = yestDt.toISOString().slice(0, 10);
+
+    const rowRegex = /<tr[^>]*data-day="([^"]+)"[^>]*>.*?<td>(.*?)<\/td>.*?<td><ul class="tasks">(.*?)<\/ul><\/td>.*?<\/tr>/gs;
+    let m;
+    let todayTasks = [];
+    let todayLabel = '';
+    let yestPending = [];
+
+    while ((m = rowRegex.exec(content)) !== null) {
+      const day = m[1];
+      const label = m[2].replace(/<[^>]+>/g, '').trim();
+      const tasksHtml = m[3];
+
+      const liRegex = /<li([^>]*)>(.*?)<\/li>/gs;
+      let li;
+      while ((li = liRegex.exec(tasksHtml)) !== null) {
+        const attrs = li[1];
+        const inner = decodeEntities(li[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+        const idMatch = attrs.match(/data-id="([^"]+)"/);
+        const id = idMatch ? idMatch[1] : '';
+        const isNote = attrs.includes('note');
+        const isMovedAway = attrs.includes('movedaway');
+
+        if (day === todayStr) {
+          todayLabel = label;
+          if (isNote) {
+            todayTasks.push('  ℹ️ _' + inner + '_');
+          } else if (!isMovedAway && id) {
+            const mark = doneSet.has(id) ? '✅' : '▫️';
+            todayTasks.push(mark + ' ' + inner);
+          }
+        }
+
+        if (day === yestStr) {
+          if (!isNote && !isMovedAway && id && !doneSet.has(id)) {
+            yestPending.push('⚠️ ' + inner);
+          }
+        }
+      }
+    }
+
+    if (mode === 'morning') {
+      const lines = [];
+      lines.push(`📅 *Pla d'estudi: ${todayLabel} (${todayStr})*`);
+      lines.push('');
+      if (yestPending.length > 0) {
+        lines.push('⏳ *Pendent d\'ahir:*');
+        lines.push(...yestPending);
+        lines.push('');
+      }
+      lines.push('📋 *Tasques d\'avui:*');
+      if (todayTasks.length > 0) {
+        lines.push(...todayTasks);
+      } else {
+        lines.push('_No hi ha tasques programades per avui._');
+      }
+      await sendTelegram(lines.join('\n'));
+      return res.status(200).send('Morning notification sent');
+    } else {
+      const lines = [];
+      lines.push(`🌙 *Revisió de final de dia · ${todayLabel} (${todayStr})*`);
+      lines.push('');
+      lines.push('Bona nit Hira! Com ha anat la jornada d\'avui?');
+      lines.push('Aquest era el teu pla d\'avui:');
+      lines.push('');
+      if (todayTasks.length > 0) {
+        lines.push(...todayTasks);
+      } else {
+        lines.push('_No hi havia tasques específiques per avui._');
+      }
+      lines.push('');
+      lines.push('💬 *Respon directament a aquest missatge* dient-me què has pogut fer (o què vols moure a demà) i t\'ho actualitzaré a la web i al calendari!');
+      await sendTelegram(lines.join('\n'));
+      return res.status(200).send('Evening notification sent');
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send('Error: ' + err.message);
+  }
+};
