@@ -1,8 +1,8 @@
 ﻿const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const AUTH_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '6437779106';
+const AUTH_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const GH_TOKEN = process.env.GH_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const REPO = 'hirasheiikh/planning-finals';
+const REPO = process.env.GH_REPO || 'owner/repo';
 
 function decodeEntities(str) {
   if (!str) return '';
@@ -169,6 +169,8 @@ function parseTasksForDate(content, dateStr) {
 }
 
 function parseAllTasks(content) {
+  const state = getState(content);
+  const doneSet = new Set(Array.isArray(state.done) ? state.done : []);
   const all = [];
   const rowRegex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>(.*?)<\/tr>/gs;
   let rm;
@@ -179,9 +181,12 @@ function parseAllTasks(content) {
     let tm;
     while ((tm = taskRegex.exec(rowContent)) !== null) {
       const id = tm[1];
+      const attrs = tm[2] || '';
       const raw = tm[3];
+      const isMovedAway = attrs.includes('movedaway');
+      const isDone = doneSet.has(id);
       const text = decodeEntities(raw.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
-      all.push({ day, id, text, raw });
+      all.push({ day, id, text, raw, attrs, isMovedAway, isDone });
     }
   }
   return all;
@@ -207,7 +212,7 @@ function getUpcomingScheduleOverview(content, fromDateStr, daysCount = 14) {
       const isDone = doneSet.has(id);
       const isMoved = attrs.includes('movedaway');
       if (!isMoved) {
-        tasks.push({ id, text, isDone, isWork: text.toLowerCase().includes('feina') || text.toLowerCase().includes('grifols') });
+        tasks.push({ id, text, isDone, isWork: text.toLowerCase().includes('feina') || false });
       }
     }
     allDays.push({ day, tasks, pendingCount: tasks.filter(t => !t.isDone).length, totalCount: tasks.length });
@@ -226,6 +231,7 @@ function executeActionBatch(initialContent, actions) {
       const q = (act.query || '').toLowerCase().trim();
       const all = parseAllTasks(updated);
       const matches = all.filter(t => {
+        if (t.isMovedAway) return false;
         const textMatch = t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8)));
         if (!textMatch) return false;
         if (act.day) return t.day === act.day;
@@ -245,8 +251,8 @@ function executeActionBatch(initialContent, actions) {
       const isWork = Boolean(act.is_work);
       const newId = `${day}-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 100)}`;
       const formattedLi = isWork
-        ? `<li data-id="${newId}">💼 <strong>Feina:</strong> ${clean}</li>`
-        : `<li data-id="${newId}">${clean}</li>`;
+        ? `<li data-id="${newId}">💼 <strong>Feina:</strong> ${clean}<span class="cal-sync" style="display:none">⚠️</span></li>`
+        : `<li data-id="${newId}">${clean}<span class="cal-sync" style="display:none">⚠️</span></li>`;
 
       const rowRegex = new RegExp(`(<tr[^>]*data-day="${day}"[^>]*>.*?<ul class="tasks">)(.*?)(</ul>)`, 's');
       if (updated.match(rowRegex)) {
@@ -257,25 +263,53 @@ function executeActionBatch(initialContent, actions) {
       const q = (act.query || '').toLowerCase().trim();
       const targetDate = act.target_date || getMadridDate(1);
       const all = parseAllTasks(updated);
-      const target = all.find(t => t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8))));
+      const todayStr = getMadridDate(0);
+
+      // Filter out tasks already moved or already marked done
+      const candidateTasks = all.filter(t => !t.isMovedAway && !t.isDone);
+      // Prioritize tasks on today's date!
+      const target = candidateTasks.find(t => t.day === todayStr && (t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8)))))
+                  || candidateTasks.find(t => t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8))))
+                  || all.find(t => !t.isMovedAway && (t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8)))));
 
       if (target) {
-        const liMatch = updated.match(new RegExp(`<li\\s+data-id="${target.id}"[^>]*>(.*?)</li>`, 's'));
-        if (liMatch) {
-          const rawInner = liMatch[1];
-          updated = updated.replace(new RegExp(`\\s*<li\\s+data-id="${target.id}"[^>]*>.*?</li>`, 's'), '');
-          const newId = `${targetDate}-${Date.now().toString().slice(-4)}`;
-          const toRowRegex = new RegExp(`(<tr[^>]*data-day="${targetDate}"[^>]*>.*?<ul class="tasks">)(.*?)(</ul>)`, 's');
-          if (updated.match(toRowRegex)) {
-            updated = updated.replace(toRowRegex, `$1$2<li data-id="${newId}">${rawInner}</li>$3`);
-            executionLog.push(`⏩ Moguda a ${targetDate}: "${target.text}"`);
+        // Mark as movedaway on source date
+        const srcRegex = new RegExp(`(<li\\s+[^>]*data-id="${target.id}"[^>]*>)(.*?)(</li>)`, 's');
+        if (updated.match(srcRegex)) {
+          updated = updated.replace(srcRegex, (m, openTag, inner, closeTag) => {
+            let tag = openTag;
+            if (tag.includes('class="')) {
+              tag = tag.replace(/class="([^"]*)"/, (cm, cVal) => cVal.includes('movedaway') ? cm : `class="${cVal} movedaway"`);
+            } else {
+              tag = tag.replace('<li', '<li class="movedaway"');
+            }
+            if (!tag.includes('data-to=')) {
+              tag = tag.replace('<li', `<li data-to="${targetDate}"`);
+            }
+            return `${tag}${inner}${closeTag}`;
+          });
+        } else {
+          updated = updated.replace(new RegExp(`\\s*<li\\s+[^>]*data-id="${target.id}"[^>]*>.*?</li>`, 's'), '');
+        }
+
+        const newId = `${targetDate}-${Date.now().toString().slice(-4)}`;
+        const toRowRegex = new RegExp(`(<tr[^>]*data-day="${targetDate}"[^>]*>.*?<ul class="tasks">)(.*?)(</ul>)`, 's');
+        if (updated.match(toRowRegex)) {
+          let cleanInner = target.raw.replace(/<span\s+class="from">.*?<\/span>\s*/g, '');
+          if (!cleanInner.includes('cal-sync')) {
+            cleanInner += '<span class="cal-sync" style="display:none">⚠️</span>';
           }
+          updated = updated.replace(toRowRegex, `$1$2<li data-id="${newId}">⏩ de ${target.day}: ${cleanInner}</li>$3`);
+          executionLog.push(`⏩ Moguda a ${targetDate}: "${target.text}"`);
         }
       }
     } else if (act.type === 'edit') {
       const q = (act.query || '').toLowerCase().trim();
       const all = parseAllTasks(updated);
-      const target = all.find(t => t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8))));
+      const todayStr = getMadridDate(0);
+      const candidates = all.filter(t => !t.isMovedAway);
+      const target = candidates.find(t => t.day === todayStr && (t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8)))))
+                  || candidates.find(t => t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8))));
 
       if (target) {
         const liMatch = updated.match(new RegExp(`(<li\\s+data-id="${target.id}"[^>]*>)(.*?)(</li>)`, 's'));
@@ -285,6 +319,9 @@ function executeActionBatch(initialContent, actions) {
             formatted = `⚠️ <strong>${formatted.replace(/<\/?strong>/g, '').replace(/^⚠️\s*/, '')}</strong>`;
           } else if (act.is_bold && !formatted.includes('<strong>')) {
             formatted = `<strong>${formatted}</strong>`;
+          }
+          if (!formatted.includes('cal-sync')) {
+            formatted += '<span class="cal-sync" style="display:none">⚠️</span>';
           }
           updated = updated.replace(new RegExp(`(<li\\s+data-id="${target.id}"[^>]*>)(.*?)(</li>)`, 's'), `$1${formatted}$3`);
           executionLog.push(`✏️ Modificada (${target.day}): "${target.text}" → "${formatted.replace(/<[^>]+>/g, '')}"`);
@@ -307,12 +344,12 @@ async function callGemini(userMessage, todayDate, todayTasks, upcomingSchedule) 
     return `📅 ${d.day} [${d.pendingCount} pendents]: ${taskDetails}`;
   }).join('\n') : '';
 
-  const systemPrompt = `Ets el secretari personal, confident i company d'estudi de la Hira Sheikh Ahmed (estudiant d'Enginyeria Informàtica a la UPC · FIB i QA/Validació de models d'IA a Grifols).
+  const systemPrompt = `Ets el secretari personal i company d'estudi intel·ligent de l'estudiant.
 Tens la intel·ligència, calidesa, sentit comú i to humà del Gemini de debò. Parlaràs SEMPRE en CATALÀ.
 
-Context de la Hira:
+Context de l'estudiant:
 - Universitat: UPC · FIB (Enginyeria Informàtica). Assignatures claus: PAR, IDI, BD, ER, SIO.
-- Feina: Grifols (QA/Models d'IA). Queries, reunions 15:30h, automacions.
+- Horaris de classe, feina i dates d'entrega.
 - Filosofia: MAI modifiquis res sense demanar confirmació. Formula clarament el resum de les accions.
 
 Data d'avui: ${todayDate}. Demà: ${getMadridDate(1)}.
@@ -325,7 +362,7 @@ ${scheduleContext}
 
 Instruccions de funcionament:
 1. 💡 BUSCADOR DE FORATS I ASSESSOR D'HORARIS:
-   Si la Hira pregunta coses com:
+   Si l'estudiant pregunta coses com:
    - "Quan creus que hauria de fer X?"
    - "Quins dies tinc més forats per fer X o estudiar?"
    - "Quan em poses X tasca?"
@@ -335,7 +372,7 @@ Instruccions de funcionament:
 
 2. ⚡ PROPOSTA D'ACCIONS (afegir, esborrar, moure, reprogramar, modificar/marcar urgent):
    REGISTRE D'ACCIONS OBLIGATORI:
-   Si la Hira demana fer canvis (ex: "demà no quedaré per fer SIO sinó trucada a les 18:30", "esborra lo de quedar per fer sio tant dijous com divendres", "afegeix trucada a les 18:30", "posa en negreta l'entrega d'ER"):
+   Si l'estudiant demana fer canvis (ex: "demà no quedaré per fer SIO sinó trucada a les 18:30", "esborra lo de quedar per fer sio tant dijous com divendres", "afegeix trucada a les 18:30", "posa en negreta l'entrega d'ER"):
    ÉS TOTALMENT PROHIBIT RETORNAR intent: "chat"!
    HAS DE RETORNAR SEMPRE EXCLUSIVAMENT:
    intent: "propose_actions"
@@ -360,7 +397,7 @@ Retorna SEMPRE exclusivament el següent JSON vàlid:
   "actions": [ ... ],
   "summary": "Resum breu de les accions o null",
   "target_date": "YYYY-MM-DD o null",
-  "reply": "Missatge per a la Hira en català"
+  "reply": "Missatge per a l'estudiant en català"
 }`;
 
   const models = ['gemini-flash-lite-latest', 'gemini-3-flash-preview', 'gemini-pro-latest'];
@@ -473,7 +510,7 @@ module.exports = async (req, res) => {
 
         await saveGitHubFile(finalHtml, sha, `Planning Bot: afegir tasca (${targetDate})`);
         await answerCallbackQuery(cbId, "Tasca afegida!");
-        await editTelegramMessage(chatId, messageId, `✅ **Tasca confirmada i afegida al teu planning!**\n\n📅 *${targetDate}* · ${isWork ? '💼 Feina (Grifols)' : '🎓 Universitat'}\n📝 *${taskText}*`);
+        await editTelegramMessage(chatId, messageId, `✅ **Tasca confirmada i afegida al teu planning!**\n\n📅 *${targetDate}* · ${isWork ? '💼 Feina' : '🎓 Universitat'}\n📝 *${taskText}*`);
         return res.status(200).send('OK');
       }
 
@@ -516,12 +553,12 @@ module.exports = async (req, res) => {
 
   const chatId = String(message.chat.id);
   if (chatId !== String(AUTH_CHAT_ID)) {
-    await sendTelegram(chatId, "⚠️ Aquest és el bot privat de planificació de la Hira.");
+    await sendTelegram(chatId, "⚠️ Aquest és el bot privat de planificació.");
     return res.status(200).send('Unauthorized');
   }
 
   if (message.voice) {
-    await sendTelegram(chatId, "🎙️ He rebut la teva nota de veu, Hira! Pots fer servir el botó de dictat per veu del teu teclat mòbil i t'entendré a la perfecció.");
+    await sendTelegram(chatId, "🎙️ He rebut la teva nota de veu, ! Pots fer servir el botó de dictat per veu del teu teclat mòbil i t'entendré a la perfecció.");
     return res.status(200).send('OK');
   }
 
@@ -552,13 +589,13 @@ module.exports = async (req, res) => {
 
         await saveGitHubFile(finalHtml, sha, "Planning Bot: aplicar canvis confirmats per text");
         const logMsg = log.length > 0 ? `\n\n${log.join('\n')}` : '';
-        await sendTelegram(chatId, `✅ **Fet, Hira! He aplicat els canvis al teu planning:**${logMsg}`);
+        await sendTelegram(chatId, `✅ **Fet, ! He aplicat els canvis al teu planning:**${logMsg}`);
         return res.status(200).send('OK');
       }
     }
 
     if (!state.pending && isAffirmative) {
-      await sendTelegram(chatId, "💡 No hi ha cap canvi pendent per confirmar en aquest moment, Hira! Els canvis anteriors (com la trucada de SIO a les 18:30h) ja estan registrats al teu planning. Si vols canviar o afegir alguna altra cosa, demana-m'ho directament!");
+      await sendTelegram(chatId, "💡 No hi ha cap canvi pendent per confirmar en aquest moment, ! Els canvis anteriors (com la trucada de SIO a les 18:30h) ja estan registrats al teu planning. Si vols canviar o afegir alguna altra cosa, demana-m'ho directament!");
       return res.status(200).send('OK');
     }
 
@@ -631,7 +668,7 @@ module.exports = async (req, res) => {
     }
 
     // --- Fallback amigable si cap model respon ---
-    await sendTelegram(chatId, "Hola Hira! He tingut un petit tall de connexió. Em pots repetir què necessites? Soc aquí per ajudar-te amb qualsevol tasca o consulta de la teva agenda!");
+    await sendTelegram(chatId, "Hola ! He tingut un petit tall de connexió. Em pots repetir què necessites? Soc aquí per ajudar-te amb qualsevol tasca o consulta de la teva agenda!");
     return res.status(200).send('OK');
 
   } catch (err) {
