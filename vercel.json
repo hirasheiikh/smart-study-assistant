@@ -1,0 +1,22 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron?mode=morning",
+      "schedule": "5 6 * * *"
+    },
+    {
+      "path": "/api/cron?mode=evening",
+      "schedule": "30 20 * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/calendar.ics",
+      "destination": "/api/calendar"
+    },
+    {
+      "source": "/api/calendar.ics",
+      "destination": "/api/calendar"
+    }
+  ]
+}
