@@ -3099,7 +3099,7 @@ function setupDay(card){
   if(movedLis.length||noteLis.length){
     var det=el('details','dc-moved');
     var n=movedLis.length;
-    det.appendChild(el('summary','',n?(n+(n===1?' tasca mogada':' tasques mogudes')):'Notes'));
+    det.appendChild(el('summary','',n?(n+(n===1?' tasca moguda':' tasques mogudes')):'Notes'));
     var ml=el('ul','moved-list');
     movedLis.forEach(function(li){ml.appendChild(li);});
     noteLis.forEach(function(li){ml.appendChild(li);});
