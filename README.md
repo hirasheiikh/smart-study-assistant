@@ -2,9 +2,10 @@
 
 > **A 24/7 cloud-first personal study secretary and adaptive scheduler that turns everyday mobile messaging into real-time academic planning, Google Calendar synchronization, and automated daily briefings.**
 >
-> 💡 **Project Status & Roadmap:**
-> The core automation engine (Telegram bot, serverless crons, universal RFC 5545 calendar synchronization, and GitOps) is **fully implemented, solid, and running in production 24/7**. The web interface and dashboard aesthetics are **actively evolving** with ongoing design iterations (soft pastel tones, personalized widgets, and enhanced mobile ergonomics).
+> 💡 **Project Status & Continuous Functional Improvement:**
+> El projecte es troba en **desenvolupament i millora contínua activa**, optimitzant permanentment tant el **funcionament intern i l'arquitectura d'intel·ligència artificial (motor NLU amb Gemini 3 Flash, sincronització GitOps i gestió de tasques)** com el disseny, usabilitat i ergonomia mòbil de la interfície d'usuari.
 
+[![Powered by Gemini AI](https://img.shields.io/badge/AI_Engine-Gemini_3_Flash-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
 [![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com)
 [![Telegram](https://img.shields.io/badge/Bot-Telegram-2CA5E0?style=for-the-badge&logo=telegram)](https://telegram.org)
 [![Google Calendar](https://img.shields.io/badge/Google_Calendar-Synced-4285F4?style=for-the-badge&logo=googlecalendar&logoColor=white)](https://calendar.google.com)
@@ -68,7 +69,10 @@ flowchart TD
 
 ## ✨ Full Feature Set
 
-1. **💬 Mobile Assistant via Telegram (24/7 Bi-directional):**
+1. **🧠 Assistent Intel·ligent amb IA (Powered by Gemini 3 Flash):**
+   - **Comprensió total en llenguatge natural:** Motor NLU avançat basat en Gemini 3 Flash que entén català col·loquial, abreviatures, faltes i missatges ràpids sense dependre de paraules clau rígides.
+   - **Contextualització intel·ligent Feina vs. Universitat:** Distingeix automàticament entre tasques professionals (validació d'IA a Grifols, consultes de bases de dades, fluxos automàtics, reunions) i obligacions acadèmiques (laboratoris, parcials i entregues de la FIB · UPC).
+   - **Gestió àgil de l'agenda:** Reconeixement de dates naturals i numèriques (`què tindré el 23/11?`, `mou el lab 2122q1 a aquesta tarda`, `fet 1`), actualitzant atòmicament l'estat a GitHub i Vercel.
    - Natural text commands: `done with PAR lab`, `move BD review to tomorrow`, or task numbers (`feta la 2`).
    - The bot matches the task, updates the state file in GitHub via API, triggers continuous deployment, and replies within seconds.
    - Type `today` or `tomorrow` anytime for an immediate, numbered schedule.
