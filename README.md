@@ -3,7 +3,7 @@
 > **A 24/7 cloud-first personal study secretary and adaptive scheduler that turns everyday mobile messaging into real-time academic planning, Google Calendar synchronization, automated daily briefings, and interactive AI-driven schedule governance.**
 >
 > 💡 **Project Status & Continuous Engineering:**
-> El projecte es troba en **desenvolupament i millora contínua activa**, optimitzant permanentment tant el **funcionament intern i l'arquitectura d'intel·ligència artificial (motor conversacional amb Gemini, sistema de confirmació interactiva mitjançant botons de Telegram, cascada de models per alta disponibilitat i sincronització GitOps bidireccional)** com l'ergonomia, creació de tasques en viu i usabilitat mòbil de la interfície d'usuari.
+> The project is actively maintained and continuously engineered, optimizing internal systems and AI architecture (conversational Google Gemini engine, interactive two-step Telegram button confirmations, high-availability multi-model fallback cascade, and bidirectional GitOps sync) alongside live web task authoring, ergonomics, and mobile-first UX.
 
 [![Powered by Gemini AI](https://img.shields.io/badge/AI_Engine-Gemini_Conversational-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
 [![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com)
@@ -47,14 +47,14 @@ flowchart TD
     end
 
     subgraph AIEngine["Gemini Multi-Model AI Engine"]
-        Cascade["Cascada de Models (Gemini Flash Lite + Gemini 3 Flash)"]
+        Cascade["Model Cascade: Gemini Flash Lite + Gemini 3 Flash"]
         NLU["Conversational NLU & Clean Entity Extraction"]
     end
 
     subgraph Persistence["Git-as-a-Database & Output"]
-        GH["GitHub API (Atomic Commits via SHA)"]
-        TG["Telegram Bot API (Inline Keyboards & Callback Queries)"]
-        Cal["Universal Calendar Sync (Apple, Google & Outlook)"]
+        GH["GitHub API: Atomic Commits via SHA"]
+        TG["Telegram Bot API: Inline Keyboards & Callback Queries"]
+        Cal["Universal Calendar Sync: Apple, Google & Outlook"]
     end
 
     Mobile -->|Casual Text or Voice Dictation| TG
@@ -79,56 +79,89 @@ flowchart TD
 
 ## ✨ Full Feature Set
 
-### 1. 🛑 Confirmació Interactiva per Botons de Telegram (Two-Step Governance)
-* **Zero canvis accidentals:** El bot **mai afegeix, esborra ni mou tasques a cegues**.
-* **Previsualització clara:** Sempre formula una proposta neta amb la data de destí, el text netejat de comandes i l'àmbit (*💼 Feina* o *🎓 Universitat*).
-* **Botons integrats (*InlineKeyboardMarkup*):**
-  * `[ ✅ Sí, afegeix-la ]` / `[ ❌ Cancel·la ]` per afegir.
-  * `[ 🗑️ Sí, esborra-la ]` per eliminacions.
-  * `[ ⏩ Sí, mou-la ]` per reprogramacions.
-* **Actualització atòmica en viu:** Mitjançant `callback_query` i `editMessageText`, el missatge es transforma en una confirmació verda sense soroll al xat.
+### 1. 🛑 Interactive Telegram Button Confirmation (Two-Step Governance)
+* **Zero Accidental Changes:** The bot **never adds, deletes, or moves tasks blindly**.
+* **Clean Proposal Preview:** Every operation is proposed cleanly with target date, sanitized task action, and domain (*💼 Work (Grifols)* vs. *🎓 University (FIB)*).
+* **Integrated Tap Buttons (`InlineKeyboardMarkup`):**
+  * `[ ✅ Yes, add it ]` / `[ ❌ Cancel ]` for task insertion.
+  * `[ 🗑️ Yes, delete it ]` for task deletion.
+  * `[ ⏩ Yes, reschedule ]` for moving tasks.
+* **In-Place Atomic Update:** Handled via Telegram `callback_query` and `editMessageText`, updating the message in place with a clear confirmation without polluting the chat history.
 
-### 2. 🧠 Motor Conversacional amb Cascada Gemini (100% Uptime & Free Tier)
-* **Respostes humanes, empàtiques i profundes:** Actua com el Gemini autèntic. No només classifica comandes, sinó que ofereix consells d'organització, acompanya en moments d'estrès davant d'exàmens com PAR o IDI, i xerra amb simpatia davant de salutacions com *«hola caracola»*.
-* **Arquitectura de cascada multimodels:** Crida principal a **`gemini-flash-lite-latest`** (alta quota per dia, latència ultraràpida) amb fallback resilient a **`gemini-3-flash-preview`**. Això elimina qualsevol risc de saturació de quota (*429 Quota Exceeded*) mantenint un cost de **0,00 €**.
-* **Neteja algorítmica de títols (`cleanTaskTitle`):** Elimina paraules com *«afegeix»*, *«posa»*, *«apunta»*, *«demà»* perquè a l'agenda només hi quedi la tasca pura (ex: *«afegeix fer idi dema»* ➔ *«Fer IDI»*).
+### 2. 🧠 Conversational Multi-Model Gemini Cascade (100% Uptime & Zero Cost)
+* **Empathetic, In-Depth Conversational Intelligence:** Acts like the genuine Gemini assistant. Beyond classifying commands, it offers organizational advice, provides empathetic encouragement when dealing with rigorous exams (like Parallelism, HCI, Databases), and chats naturally when greeted casually.
+* **High-Availability Multi-Model Cascade:** Primary requests are routed to **`gemini-flash-lite-latest`** (ultra-low latency, high daily quota limits) with resilient fallback to **`gemini-3-flash-preview`**. This eliminates any risk of rate-limit exhaustion (*429 Quota Exceeded*) while maintaining a total cost of **$0.00** (*100% Free Tier*).
+* **Algorithmic Task Cleansing (`cleanTaskTitle`):** Strips command verbs like *«add»*, *«schedule»*, *«put»*, *«tomorrow»* so that only the clean, intended task text is preserved (e.g. *«add review idi lab tomorrow»* ➔ *«Review IDI Lab»*).
 
-### 3. 🌐 Creació i Edició Directa des del Planner Web
-* **Botó global a la barra superior (`➕ Nova tasca`):** Finestra modal per triar el dia d'un desplegable, descriure la tasca, marcar si és de Grifols/feina i desar-la al moment.
-* **Creació ràpida a cada fila (`＋ Afegir tasca`):** Cada dia del calendari disposa d'un botó subtil a la seva cel·la per obrir un camp d'escriptura immediat i afegir tasques prement Enter.
-* **Edició i marcatge:** Doble clic o icona de llapis (✏️) per modificar qualsevol text, caselles de verificació instantànies i botó de moure de dia (⏩).
-* **Sincronització en temps real (`api/sync`):** Tot canvi a la web es reflecteix a GitHub i està disponible immediatament per al bot de Telegram i els calendaris mòbils.
+### 3. 🌐 Direct Task Authoring & Editing from the Web Planner
+* **Global Sticky Toolbar Modal (`➕ New Task`):** Quick-entry modal allowing selection of any upcoming day from a dropdown, task description, work/internship tag toggle, and instant persistence.
+* **Row-Level Direct Input (`＋ Add Task`):** Every calendar day features a discreet inline button to open a quick input field and create tasks right from the table row by pressing Enter.
+* **In-Place Editing & State Tracking:** Double-click or click the pencil icon (✏️) to edit existing tasks, instant checkbox completion, and day rescheduling (`⏩`).
+* **Real-Time Bidirectional Cloud Sync (`/api/sync`):** Every client-side modification commits atomically to GitHub via API and is immediately reflected across the Telegram bot and synced calendar feeds.
 
 ### 4. ⏰ Automated Cloud Briefings (Zero Computer Dependency)
-* **07:05 AM Morning Briefing:** Envia el planning prioritzat del dia directament al mòbil per començar el matí amb focus.
-* **21:30 PM Evening Check-in:** Revisa les tasques pendents, pregunta com ha anat la jornada i proposa reprogramacions.
-* Executat mitjançant **Vercel Cloud Crons**: funciona 24/7 encara que l'ordinador estigui apagat.
+* **07:05 AM Morning Briefing:** Delivers today's prioritized schedule directly to the mobile phone to start the day with focus.
+* **21:30 PM Evening Check-in:** Reviews pending tasks, checks on daily progress, and prompts for any rescheduling.
+* Powered by **Vercel Cloud Crons**: runs 24/7 seamlessly even when the computer is powered off.
 
-### 5. 📅 Sincronització Universal de Calendaris (Apple, Google, Outlook)
-* Generador natiu RFC 5545 d'iCalendar (`/calendar.ics`).
-* Subscripció automàtica des d'iPhone (Apple Calendar), Android (Google Calendar) i Microsoft Outlook sense necessitat de sincronitzacions manuals.
+### 5. 📅 Universal Calendar Synchronization (Apple, Google, Outlook)
+* Native RFC 5545 iCalendar dynamic feed generator (`/calendar.ics`).
+* One-time subscription from iPhone (Apple Calendar), Android (Google Calendar), and Microsoft Outlook with zero manual export/import friction.
 
 ---
 
-## 🛠️ Stack Tecnològic
+## 🛠️ Tech Stack & Tooling
 
-| Component | Tecnologia |
+| Component | Technology |
 |---|---|
-| **Motor d'IA & NLU** | Google Gemini (`gemini-flash-lite-latest` + `gemini-3-flash`) |
-| **Backend Serverless** | Node.js (v20+), Vercel Serverless Functions, Vercel Crons |
-| **Missatgeria & UX** | Telegram Bot API (Webhooks, Inline Keyboards, Callback Queries) |
-| **Persistència (GitOps)** | GitHub REST API v3 (Git-as-a-Database, commits atòmics amb SHA) |
-| **Calendari** | RFC 5545 iCalendar dynamic feed generator |
+| **AI Engine & NLU** | Google Gemini (`gemini-flash-lite-latest` + `gemini-3-flash-preview`) |
+| **Serverless Backend** | Node.js (v20+), Vercel Serverless Functions, Vercel Crons |
+| **Messaging & UX** | Telegram Bot API (Webhooks, Inline Keyboards, Callback Queries) |
+| **Persistence (GitOps)** | GitHub REST API v3 (Git-as-a-Database, atomic SHA-verified commits) |
+| **Calendar Standard** | RFC 5545 iCalendar dynamic feed generator |
 | **Frontend Web** | Vanilla HTML5, CSS3 Custom Properties, Web Crypto API (`crypto.subtle`) |
 
 ---
 
-## 📄 Llicència
+## 🚀 Quick Setup & Deployment
 
-Distribuït sota llicència MIT. Consulta el fitxer `LICENSE` per a més informació.
+### 1. Prerequisites
+- A GitHub account.
+- A free [Vercel](https://vercel.com) account.
+- A Telegram bot created via [@BotFather](https://t.me/BotFather).
+- A free Google AI Studio API key.
+
+### 2. Environment Variables
+Configure the following secrets in your Vercel Project Settings:
+
+```env
+TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
+TELEGRAM_CHAT_ID="your_telegram_numeric_chat_id"
+GH_TOKEN="your_github_personal_access_token_with_repo_scope"
+GEMINI_API_KEY="your_google_ai_studio_gemini_api_key"
+```
+
+### 3. Deploy in One Click
+1. Fork or clone this repository.
+2. Link the repository to your Vercel account (`vercel link` or GitHub integration).
+3. Register the Telegram webhook:
+   ```bash
+   curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=https://<YOUR_VERCEL_DOMAIN>/api/telegram"
+   ```
+4. Subscribe to the Calendar Feed:
+   - **Apple Calendar (iPhone/Mac):** Settings → Calendar → Calendar Accounts → Add Subscribed Calendar (paste `https://<YOUR_VERCEL_DOMAIN>/calendar.ics`).
+   - **Google Calendar (Android/Web):** Other calendars (+) → From URL.
+   - **Microsoft Outlook:** Add calendar → Subscribe from web.
+5. Done! Your autonomous study secretary is live.
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 ---
 
 <div align="center">
-  <sub>Desenvolupat amb 💡 per <a href="https://github.com/hirasheiikh">Hira Sheikh Ahmed</a> · Enginyeria Informàtica (UPC · FIB) & QA/Validació de Models d'IA (Grifols)</sub>
+  <sub>Engineered with 💡 by <a href="https://github.com/hirasheiikh">Hira Sheikh Ahmed</a> · Informatics Engineering Student @ UPC (FIB) & QA/AI Model Validation Intern @ Grifols</sub>
 </div>
