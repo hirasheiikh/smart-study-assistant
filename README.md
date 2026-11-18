@@ -18,9 +18,11 @@
 
 As an Informatics Engineering student balancing university finals and an industrial AI/QA validation internship, staying on top of coursework, exams, and project submissions requires disciplined scheduling.
 
-Like many people who rely on digital tools, whenever inspiration or a deadline crossed my mind on the go, **my instinctive habit was to send a quick note to my personal WhatsApp self-chat**. We all do it! But notes get scattered, plans drift out of date, and manual calendar management becomes another cognitive burden.
+Like many people who rely on digital tools, whenever inspiration, an exam date, or a coursework deadline crossed my mind on the go, **my instinctive habit was to jot down a quick note in my personal self-chat on WhatsApp, the phone's notes app, a sticky note on my PC, or a physical notebook**. We all do it!
 
-I asked myself: ***"How much easier would life be with a personal secretary who listens to quick mobile messages, maintains my schedule, automatically synchronizes my Google Calendar, and checks in on me every morning and evening?"***
+**The real bottleneck, however, comes right after:** you end up with fragmented thoughts scattered across multiple places that you must manually organize, fit into realistic time slots between university lectures and work hours, and painstakingly type one by one into Google Calendar or Apple Calendar. That manual friction and cognitive load often means schedules become outdated or neglected.
+
+I asked myself: ***"How much easier would life be with a personal study secretary that bridges this gap? An assistant that listens to quick, raw notes on the go, fits them into my schedule, keeps my digital calendars synchronized in real time, and checks in with me every morning and evening?"***
 
 That was the spark for this project: transforming the natural habit of sending quick self-notes into an **autonomous, cloud-first study assistant** operating 24/7 with **zero ongoing infrastructure costs**.
 
