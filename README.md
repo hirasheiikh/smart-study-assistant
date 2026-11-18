@@ -25,36 +25,36 @@ That was the spark for this project: transforming the natural habit of sending q
 
 ```mermaid
 flowchart TD
-    subgraph User["📱 User Interaction"]
-        Mobile["Mobile App (Telegram)"]
-        Web["Responsive Web App & PWA"]
+    subgraph User["User Interaction"]
+        Mobile["Telegram Mobile App"]
+        Web["Responsive Web App PWA"]
     end
 
-    subgraph Serverless["⚡ Cloud Core (Vercel Serverless)"]
-        Webhook["Telegram Webhook (/api/telegram)"]
-        Cron["Automated Crons (/api/cron)"]
-        CalendarFeed["Dynamic iCal Feed (/calendar.ics)"]
+    subgraph Serverless["Cloud Core Vercel Serverless"]
+        Webhook["Telegram Webhook: api/telegram"]
+        Cron["Automated Crons: api/cron"]
+        CalendarFeed["Dynamic iCal Feed: calendar.ics"]
         CDN["Global Edge CDN Hosting"]
     end
 
-    subgraph Integrations["🔌 Connected Services"]
+    subgraph Integrations["Connected Services"]
         TG["Telegram Bot API"]
-        GH["GitHub API (Git-as-a-Database)"]
-        Cal["Google Calendar (Auto Sync)"]
+        GH["GitHub API: Git-as-a-Database"]
+        Cal["Google Calendar: Auto Sync"]
     end
 
-    Cron -->|"07:05 AM Briefing & 21:30 PM Check-in"| TG
-    TG -->|"Push Notification"| Mobile
-    Mobile -->|"Natural Text: 'done: lab 3', 'move to tomorrow'"| TG
-    TG -->|"POST Webhook"| Webhook
+    Cron -->|Daily Morning and Evening Briefing| TG
+    TG -->|Push Notification| Mobile
+    Mobile -->|Natural Text Commands| TG
+    TG -->|POST Webhook| Webhook
 
-    Webhook -->|"Reads & Commits via SHA"| GH
-    Webhook -->|"Instant Confirmation"| TG
-    GH -->|"GitOps Trigger: Auto Deploy"| CDN
+    Webhook -->|Reads and Commits via SHA| GH
+    Webhook -->|Instant Confirmation| TG
+    GH -->|GitOps Auto Deploy| CDN
 
-    Web -->|"Client-side SHA-256 Auth"| CDN
-    CalendarFeed -->|"Live RFC 5545 iCal Feed"| Cal
-    Cal -->|"Syncs to Mobile Calendar"| Mobile
+    Web -->|Client-side SHA-256 Auth| CDN
+    CalendarFeed -->|Live RFC 5545 Feed| Cal
+    Cal -->|Syncs to Mobile Calendar| Mobile
 ```
 
 ---
