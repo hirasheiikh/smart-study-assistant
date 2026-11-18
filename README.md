@@ -1,6 +1,9 @@
 # 🤖 Autonomous Study Secretary & Planner
 
 > **A 24/7 cloud-first personal study secretary and adaptive scheduler that turns everyday mobile messaging into real-time academic planning, Google Calendar synchronization, and automated daily briefings.**
+>
+> 💡 **Project Status & Roadmap:**
+> The core automation engine (Telegram bot, serverless crons, universal RFC 5545 calendar synchronization, and GitOps) is **fully implemented, solid, and running in production 24/7**. The web interface and dashboard aesthetics are **actively evolving** with ongoing design iterations (soft pastel tones, personalized widgets, and enhanced mobile ergonomics).
 
 [![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com)
 [![Telegram](https://img.shields.io/badge/Bot-Telegram-2CA5E0?style=for-the-badge&logo=telegram)](https://telegram.org)
