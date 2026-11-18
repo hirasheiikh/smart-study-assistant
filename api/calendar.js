@@ -106,30 +106,109 @@ function parseIcsEvents(html) {
     }
   }
 
-  // 2. Daily tasks with ⚠️ (deliveries)
-  const dayRowRegex = /<tr[^>]*data-day="([^"]+)"[^>]*>.*?<td>(.*?)<\/td>.*?<td><ul class="tasks">(.*?)<\/ul><\/td>.*?<\/tr>/gs;
+  // 2. Daily tasks (calls, deliveries, meetings, labs, timed events)
+  const dayRowRegex = /<tr[^>]*data-day="([^"]+)"[^>]*>([\s\S]*?)<\/tr>/g;
   let dm;
   while ((dm = dayRowRegex.exec(html)) !== null) {
     const dayIso = dm[1]; // YYYY-MM-DD
-    const tasksHtml = dm[3];
-    const liRegex = /<li([^>]*)>(.*?)<\/li>/gs;
+    const rowHtml = dm[2];
+    const parts = dayIso.split('-').map(Number);
+    const [year, month, day] = parts;
+
+    const tasksMatch = rowHtml.match(/<ul class="tasks">([\s\S]*?)<\/ul>/);
+    if (!tasksMatch) continue;
+
+    const liRegex = /<li([^>]*)>([\s\S]*?)<\/li>/gs;
     let li;
-    while ((li = liRegex.exec(tasksHtml)) !== null) {
+    while ((li = liRegex.exec(tasksMatch[1])) !== null) {
       const attrs = li[1];
+      if (attrs.includes('movedaway')) continue;
+
       const inner = decodeEntities(li[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
-      if (inner.includes('⚠️') && !attrs.includes('movedaway')) {
-        const parts = dayIso.split('-').map(Number);
-        const start = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 0, 0, 0));
-        const end = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + 1, 0, 0, 0));
-        const uid = `task-${dayIso}-${inner.slice(0, 15).replace(/[^a-zA-Z0-9]/g, '')}@planning-finals`;
+      if (!inner) continue;
+
+      const idMatch = attrs.match(/data-id="([^"]+)"/);
+      const taskId = idMatch ? idMatch[1] : `${dayIso}-${inner.slice(0, 15).replace(/[^a-zA-Z0-9]/g, '')}`;
+
+      // 1. Check for exact time e.g. "a les 18:30h", "18:30h", "18:30", "14:00"
+      const exactTimeMatch = inner.match(/(?:a\s+les\s+)?(\b\d{1,2})[:.](\d{2})\s*h?\b/i);
+      // 2. Check for time ranges e.g. "8–10 lab", "16:30–17:30"
+      const rangeTimeMatch = inner.match(/\b(\d{1,2})(?::(\d{2}))?[–-](\d{1,2})(?::(\d{2}))?\s*h?\b/);
+      // 3. Check for single hour like "15 h:"
+      const singleHourMatch = inner.match(/\b(\d{1,2})\s*h(?:\s*:|\s+informe|\b)/i);
+
+      const isImportant = inner.includes('📞') || inner.includes('⚠️') || inner.includes('🚨') ||
+                          /trucada|reuni[oó]|examen|entrega|parcial|revisi[oó]|deadline|lab\b|sio\b/i.test(inner);
+
+      if (exactTimeMatch) {
+        const sh = parseInt(exactTimeMatch[1], 10);
+        const smin = parseInt(exactTimeMatch[2], 10);
+        if (sh >= 6 && sh <= 23) {
+          // CET is UTC+1
+          const start = new Date(Date.UTC(year, month - 1, day, sh - 1, smin, 0));
+          const end = new Date(Date.UTC(year, month - 1, day, sh - 1, smin + 45, 0));
+          const uid = `task-${taskId}@planning-finals`;
+          if (!events.some(e => e.uid === uid)) {
+            events.push({
+              uid,
+              summary: inner,
+              description: inner,
+              start, end, isAllDay: false
+            });
+          }
+          continue;
+        }
+      }
+
+      if (rangeTimeMatch && !inner.toLowerCase().includes('pag.') && !inner.toLowerCase().includes('pàg.')) {
+        const sh = parseInt(rangeTimeMatch[1], 10);
+        const smin = rangeTimeMatch[2] ? parseInt(rangeTimeMatch[2], 10) : 0;
+        const eh = parseInt(rangeTimeMatch[3], 10);
+        const emin = rangeTimeMatch[4] ? parseInt(rangeTimeMatch[4], 10) : 0;
+        if (sh >= 6 && eh <= 23 && eh >= sh) {
+          const start = new Date(Date.UTC(year, month - 1, day, sh - 1, smin, 0));
+          const end = new Date(Date.UTC(year, month - 1, day, eh - 1, emin, 0));
+          const uid = `task-${taskId}@planning-finals`;
+          if (!events.some(e => e.uid === uid)) {
+            events.push({
+              uid,
+              summary: inner,
+              description: inner,
+              start, end, isAllDay: false
+            });
+          }
+          continue;
+        }
+      }
+
+      if (singleHourMatch) {
+        const sh = parseInt(singleHourMatch[1], 10);
+        if (sh >= 7 && sh <= 22) {
+          const start = new Date(Date.UTC(year, month - 1, day, sh - 1, 0, 0));
+          const end = new Date(Date.UTC(year, month - 1, day, sh, 0, 0));
+          const uid = `task-${taskId}@planning-finals`;
+          if (!events.some(e => e.uid === uid)) {
+            events.push({
+              uid,
+              summary: inner,
+              description: inner,
+              start, end, isAllDay: false
+            });
+          }
+          continue;
+        }
+      }
+
+      if (isImportant) {
+        const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+        const end = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0));
+        const uid = `task-${taskId}@planning-finals`;
         if (!events.some(e => e.uid === uid)) {
           events.push({
             uid,
             summary: inner,
             description: inner,
-            start,
-            end,
-            isAllDay: true
+            start, end, isAllDay: true
           });
         }
       }
