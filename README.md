@@ -4,7 +4,9 @@
 
 [![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com)
 [![Telegram](https://img.shields.io/badge/Bot-Telegram-2CA5E0?style=for-the-badge&logo=telegram)](https://telegram.org)
-[![Google Calendar](https://img.shields.io/badge/Calendar-Google_Calendar-4285F4?style=for-the-badge&logo=googlecalendar&logoColor=white)](https://calendar.google.com)
+[![Google Calendar](https://img.shields.io/badge/Google_Calendar-Synced-4285F4?style=for-the-badge&logo=googlecalendar&logoColor=white)](https://calendar.google.com)
+[![Apple Calendar](https://img.shields.io/badge/Apple_Calendar-Universal_iCal-000000?style=for-the-badge&logo=apple&logoColor=white)](https://www.apple.com)
+[![Outlook](https://img.shields.io/badge/Microsoft_Outlook-RFC_5545-0078D4?style=for-the-badge&logo=microsoftoutlook&logoColor=white)](https://outlook.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
 ---
@@ -40,7 +42,7 @@ flowchart TD
     subgraph Integrations["Connected Services"]
         TG["Telegram Bot API"]
         GH["GitHub API: Git-as-a-Database"]
-        Cal["Google Calendar: Auto Sync"]
+        Cal["Universal Calendar: Apple, Google & Outlook"]
     end
 
     Cron -->|Daily Morning and Evening Briefing| TG
@@ -71,9 +73,9 @@ flowchart TD
    - **21:30 PM Evening Check-in:** Reviews what was on today's agenda, asks what got completed, and prompts for any rescheduling.
    - Powered by **Vercel Cloud Crons**: runs seamlessly even if your laptop is powered off.
 
-3. **📅 Live Google Calendar Synchronization:**
-   - Exposes a live, dynamic RFC 5545 iCalendar feed (`/calendar.ics`).
-   - Subscribe once in Google Calendar (`From URL`) and all exam dates, submission deadlines, and review sessions stay continuously in sync across mobile and desktop.
+3. **📅 Universal Calendar Synchronization (Apple, Google, Outlook):**
+   - Exposes a dynamic, standards-compliant RFC 5545 iCalendar feed (`/calendar.ics`).
+   - Zero vendor lock-in: subscribe once from **Apple Calendar (iOS / iPadOS / macOS)**, **Google Calendar (Android / Web)**, or **Microsoft Outlook**, and all deadlines, reviews, and exams stay continuously synchronized across all devices and home screen widgets.
 
 4. **🔒 Private & Secure Progressive Web App (PWA):**
    - Single-Page Application (SPA) with progress tracking, interactive checkboxes, task rescheduling (`⏩`), and real-time state persistence.
@@ -115,9 +117,10 @@ GH_TOKEN="your_github_personal_access_token_with_repo_scope"
    ```bash
    curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=https://<YOUR_VERCEL_DOMAIN>/api/telegram"
    ```
-4. Subscribe in Google Calendar:
-   - Go to Google Calendar → **Other calendars (+)** → **From URL**.
-   - Paste `https://<YOUR_VERCEL_DOMAIN>/calendar.ics`.
+4. Subscribe to the Calendar Feed:
+   - **Apple Calendar (iPhone/Mac):** Settings → Calendar → Calendar Accounts → Add Subscribed Calendar (paste `https://<YOUR_VERCEL_DOMAIN>/calendar.ics`).
+   - **Google Calendar (Android/Web):** Other calendars (+) → From URL.
+   - **Microsoft Outlook:** Add calendar → Subscribe from web.
 5. Done! Your autonomous study assistant is live.
 
 ---
