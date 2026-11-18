@@ -63,7 +63,7 @@ flowchart TD
     Cascade -->|Structured Action or Conversational Chat| Webhook
 
     Webhook -->|Two-Step Approval Prompt with Inline Buttons| TG
-    TG -->|User Clicks [✅ Sí, afegeix-la]| Webhook
+    TG -->|User confirms via inline button| Webhook
     Webhook -->|Atomic Commit| GH
     Webhook -->|Edit Message in Place| TG
 
