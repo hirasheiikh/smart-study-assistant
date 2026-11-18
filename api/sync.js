@@ -60,35 +60,6 @@ module.exports = async (req, res) => {
       const tplMatch = content.match(/<template id="content">(.*?)<\/template>/s);
       let tplHtml = tplMatch ? tplMatch[1] : '';
 
-      const fixStyle = `<style id="drawerOverlayFix">
-body:has(#assistantDrawerOverlay) .btn-assistant-toggle,
-body:has(#assistantDrawerOverlay) .btn-scroll-top,
-body:has(.assistant-drawer-overlay) .btn-assistant-toggle,
-body:has(.assistant-drawer-overlay) .btn-scroll-top,
-body:has(.task-modal-overlay) .btn-assistant-toggle,
-body:has(.index-modal-overlay) .btn-assistant-toggle,
-body.drawer-open .btn-assistant-toggle,
-body.drawer-open .btn-scroll-top {
-  display: none !important;
-}
-.assistant-drawer-overlay { z-index: 10000 !important; }
-.assistant-drawer-card { z-index: 10001 !important; }
-.btn-assistant-toggle { z-index: 990 !important; }
-.btn-scroll-top { z-index: 980 !important; }
-#bar button#bLogout, #bLogout {
-  background: #fff1f2 !important;
-  color: #e11d48 !important;
-  border: 1px solid #fecdd3 !important;
-  border-radius: 9999px !important;
-  padding: 5px 12px !important;
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
-}
-</style>`;
-      if (!tplHtml.includes('id="drawerOverlayFix"')) {
-        tplHtml = fixStyle + '\n' + tplHtml;
-      }
-
       return res.status(200).json({
         ok: true,
         state: state,
