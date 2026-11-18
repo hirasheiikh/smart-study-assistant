@@ -73,16 +73,20 @@ flowchart TD
    - The bot matches the task, updates the state file in GitHub via API, triggers continuous deployment, and replies within seconds.
    - Type `today` or `tomorrow` anytime for an immediate, numbered schedule.
 
-2. **⏰ Automated Cloud Briefings (Zero Computer Dependency):**
+2. **🌐 Edició directa a la web sincronitzada amb el núvol (GitHub & Telegram):**
+   - **Edició i creació en viu:** Possibilitat d'afegir noves tasques des del giny superior, editar el text de qualsevol tasca existent (fent doble clic o clicant la icona de llapis ✏️) i marcar caselles directament al navegador.
+   - **Sincronització instantània amb el núvol:** Totes les accions es comuniquen a través de l'endpoint `api/sync` i es desen a GitHub (Git-as-a-Database), sincronitzant en temps real l'agenda web, les consultes del bot de Telegram i el calendari electrònic.
+
+3. **⏰ Automated Cloud Briefings (Zero Computer Dependency):**
    - **07:05 AM Morning Briefing:** Delivers today's prioritized schedule and highlights any carry-over items from yesterday.
    - **21:30 PM Evening Check-in:** Reviews what was on today's agenda, asks what got completed, and prompts for any rescheduling.
    - Powered by **Vercel Cloud Crons**: runs seamlessly even if your laptop is powered off.
 
-3. **📅 Universal Calendar Synchronization (Apple, Google, Outlook):**
+4. **📅 Universal Calendar Synchronization (Apple, Google, Outlook):**
    - Exposes a dynamic, standards-compliant RFC 5545 iCalendar feed (`/calendar.ics`).
    - Zero vendor lock-in: subscribe once from **Apple Calendar (iOS / iPadOS / macOS)**, **Google Calendar (Android / Web)**, or **Microsoft Outlook**, and all deadlines, reviews, and exams stay continuously synchronized across all devices and home screen widgets.
 
-4. **🔒 Private & Secure Progressive Web App (PWA):**
+5. **🔒 Private & Secure Progressive Web App (PWA):**
    - Single-Page Application (SPA) with progress tracking, interactive checkboxes, task rescheduling (`⏩`), and real-time state persistence.
    - Client-side cryptographic authorization (SHA-256) with local session persistence ("Remember me on this device").
    - Git-as-a-Database: the source repository remains 100% private, with full audit trail across commits.
