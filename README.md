@@ -1,10 +1,11 @@
 # 🤖 Autonomous Study Secretary & Planner
 
-> **A 24/7 cloud-first personal study secretary and adaptive scheduler that turns everyday mobile messaging into real-time academic planning, Google Calendar synchronization, automated daily briefings, and interactive AI-driven schedule governance.**
+> **A 24/7 cloud-first personal study secretary and adaptive scheduler that turns everyday mobile messaging into real-time academic planning, Google Calendar synchronization, automated daily briefings, real-time cross-device synchronization (Mobile ↔ Desktop), and interactive AI-driven schedule governance.**
 >
 > 💡 **Project Status & Continuous Engineering:**
 > The project is actively maintained and continuously engineered, optimizing internal systems and AI architecture (conversational Google Gemini engine, interactive two-step Telegram button confirmations, high-availability multi-model fallback cascade, and bidirectional GitOps sync) alongside live web task authoring, ergonomics, and mobile-first UX.
 
+[![Cross-Device Sync](https://img.shields.io/badge/Cross--Device_Sync-Mobile_↔_Desktop-6366F1?style=for-the-badge&logo=pwa&logoColor=white)](https://github.com/hirasheiikh/smart-study-assistant)
 [![Powered by Gemini AI](https://img.shields.io/badge/AI_Engine-Gemini_Conversational-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
 [![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com)
 [![Telegram](https://img.shields.io/badge/Bot-Telegram_Inline_Keyboards-2CA5E0?style=for-the-badge&logo=telegram)](https://telegram.org)
@@ -99,12 +100,18 @@ flowchart TD
 * **In-Place Editing & State Tracking:** Double-click or click the pencil icon (✏️) to edit existing tasks, instant checkbox completion, and day rescheduling (`⏩`).
 * **Real-Time Bidirectional Cloud Sync (`/api/sync`):** Every client-side modification commits atomically to GitHub via API and is immediately reflected across the Telegram bot and synced calendar feeds.
 
-### 4. ⏰ Automated Cloud Briefings (Zero Computer Dependency)
+### 4. 🔄 Real-Time Cross-Device Synchronization (Mobile ↔ Desktop)
+* **True Multi-Device Continuity:** Whether you mark a lab exercise as completed on your smartphone during your commute or plan your week from your laptop, your schedule, progress metrics, and task lists remain 100% consistent across all screens.
+* **Timestamp-Aware Conflict Resolution:** Implements chronological timestamp evaluation (`state.t`), ensuring that stale local caches on one device can never overwrite fresh, active modifications made on another.
+* **Automatic Visibility & Focus Sync:** The web app actively checks for remote changes whenever the browser tab gains focus, upon unlocking your phone (*`visibilitychange`* / *`focus`* events), via periodic background polls every 20 seconds, or manually with one tap on the sticky **`🔄`** refresh button.
+* **Unified Cloud Single-Source-of-Truth:** Edits made via Telegram chat, web task forms, or desktop shortcuts all commit to and pull from the same central GitOps cloud backend (`/api/sync`).
+
+### 5. ⏰ Automated Cloud Briefings (Zero Computer Dependency)
 * **07:05 AM Morning Briefing:** Delivers today's prioritized schedule directly to the mobile phone to start the day with focus.
 * **21:30 PM Evening Check-in:** Reviews pending tasks, checks on daily progress, and prompts for any rescheduling.
 * Powered by **Vercel Cloud Crons**: runs 24/7 seamlessly even when the computer is powered off.
 
-### 5. 📅 Universal Calendar Synchronization (Apple, Google, Outlook)
+### 6. 📅 Universal Calendar Synchronization (Apple, Google, Outlook)
 * Native RFC 5545 iCalendar dynamic feed generator (`/calendar.ics`).
 * One-time subscription from iPhone (Apple Calendar), Android (Google Calendar), and Microsoft Outlook with zero manual export/import friction.
 
