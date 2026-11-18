@@ -35,7 +35,7 @@
 
 ## 💡 The Story & Motivation
 
-As an Informatics Engineering student balancing university finals at **UPC · FIB** and an industrial QA & AI model validation internship at **Grifols**, staying on top of coursework, exams, and project submissions requires disciplined scheduling.
+Balancing demanding university finals, coursework submissions, and professional internships requires disciplined, automated, and adaptive scheduling.
 
 Like many people who rely on digital tools, whenever inspiration, an exam date, or a coursework deadline crossed my mind on the go, **my instinctive habit was to jot down a quick note in my personal self-chat on WhatsApp, the phone's notes app, a sticky note on my PC, or a physical notebook**. We all do it!
 
@@ -100,7 +100,7 @@ flowchart TD
 
 ### 1. 🛑 Interactive Telegram Button Confirmation (Two-Step Governance)
 * **Zero Accidental Changes:** The bot **never adds, deletes, or moves tasks blindly**.
-* **Clean Proposal Preview:** Every operation is proposed cleanly with target date, sanitized task action, and domain (*💼 Work (Grifols)* vs. *🎓 University (FIB)*).
+* **Clean Proposal Preview:** Every operation is proposed cleanly with target date, sanitized task action, and domain (*💼 Work / Internship* vs. *🎓 University Courses*).
 * **Integrated Tap Buttons (`InlineKeyboardMarkup`):**
   * `[ ✅ Yes, add it ]` / `[ ❌ Cancel ]` for task insertion.
   * `[ 🗑️ Yes, delete it ]` for task deletion.
@@ -192,5 +192,5 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 ---
 
 <div align="center">
-  <sub>Engineered with 💡 by <a href="https://github.com/hirasheiikh">Hira Sheikh Ahmed</a> · Informatics Engineering Student @ UPC (FIB) & QA/AI Model Validation Intern @ Grifols</sub>
+  <sub>Engineered with 💡 by <a href="https://github.com/hirasheiikh">Hira Sheikh Ahmed</a> · Informatics Engineering Student @ UPC (FIB)</sub>
 </div>
