@@ -17,6 +17,22 @@
 
 ---
 
+## 📑 Table of Contents
+- [💡 The Story & Motivation](#-the-story--motivation)
+- [🏛️ System Architecture](#️-system-architecture)
+- [⚡ Core Capabilities & Intelligent Workflows](#-core-capabilities--intelligent-workflows)
+  - [1. Conversational AI Study Secretary](#1--conversational-ai-study-secretary-google-gemini)
+  - [2. Interactive Schedule Governance](#2--interactive-schedule-governance-telegram-inline-keyboards)
+  - [3. Live Web Planner & Authoring](#3--live-web-planner--direct-task-authoring)
+  - [4. Real-Time Cross-Device Sync](#4--real-time-cross-device-sync-mobile--desktop)
+  - [5. Automated Cloud Briefings](#5--automated-cloud-briefings-zero-computer-dependency)
+  - [6. Universal Calendar Sync](#6--universal-calendar-synchronization-apple-google-outlook)
+- [🛠️ Tech Stack & Tooling](#️-tech-stack--tooling)
+- [🚀 Quick Setup & Deployment](#-quick-setup--deployment)
+- [📄 License](#-license)
+
+---
+
 ## 💡 The Story & Motivation
 
 As an Informatics Engineering student balancing university finals at **UPC · FIB** and an industrial QA & AI model validation internship at **Grifols**, staying on top of coursework, exams, and project submissions requires disciplined scheduling.
@@ -30,6 +46,8 @@ I asked myself: *"How much easier would life be with a personal study secretary 
 That was the spark for this project: transforming the natural habit of sending quick self-notes into an **autonomous, cloud-first study assistant** operating 24/7 with **zero ongoing infrastructure costs ($0)**.
 
 ---
+
+<div align="right"><a href="#-autonomous-study-secretary--planner">↑ Back to Top</a></div>
 
 ## 🏛️ System Architecture
 
@@ -117,6 +135,8 @@ flowchart TD
 
 ---
 
+<div align="right"><a href="#-autonomous-study-secretary--planner">↑ Back to Top</a></div>
+
 ## 🛠️ Tech Stack & Tooling
 
 | Component | Technology |
@@ -129,6 +149,8 @@ flowchart TD
 | **Frontend Web** | Vanilla HTML5, CSS3 Custom Properties, Web Crypto API (`crypto.subtle`) |
 
 ---
+
+<div align="right"><a href="#-autonomous-study-secretary--planner">↑ Back to Top</a></div>
 
 ## 🚀 Quick Setup & Deployment
 
