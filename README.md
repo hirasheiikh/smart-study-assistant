@@ -113,6 +113,8 @@ flowchart TD
 * **Algorithmic Task Cleansing (`cleanTaskTitle`):** Strips command verbs like *«add»*, *«schedule»*, *«put»*, *«tomorrow»* so that only the clean, intended task text is preserved (e.g. *«add review idi lab tomorrow»* ➔ *«Review IDI Lab»*).
 
 ### 3. 🌐 Direct Task Authoring & Editing from the Web Planner
+- **⏰ Smart Chronological & Priority Ordering:** One-click `⏰ Ordena per hora` button on both daily cards and the *Today* widget. Intelligently places flexible/all-day tasks at the top so campus errands aren't missed, followed by fixed appointments in strict chronological sequence (morning to night).
+- **⬆️ / ⬇️ Manual Reordering:** Move tasks up or down directly with instant atomic synchronization.
 * **Global Sticky Toolbar Modal (`➕ New Task`):** Quick-entry modal allowing selection of any upcoming day from a dropdown, task description, work/internship tag toggle, and instant persistence.
 * **Row-Level Direct Input (`＋ Add Task`):** Every calendar day features a discreet inline button to open a quick input field and create tasks right from the table row by pressing Enter.
 * **In-Place Editing & State Tracking:** Double-click or click the pencil icon (✏️) to edit existing tasks, instant checkbox completion, and day rescheduling (`⏩`).
