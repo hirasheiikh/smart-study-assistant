@@ -1,5 +1,10 @@
 <!DOCTYPE html>
-<html lang="ca"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Smart Study Assistant & Planner</title><style id="css">
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Smart Study Assistant & Universal Planner</title>
+  <style id="css">
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
@@ -309,8 +314,238 @@ body {
   }
   #main {
     margin-left: 0;
-    padding: 18px 16px 85px;
+    padding: 68px 16px calc(85px + env(safe-area-inset-bottom, 0px)) !important;
   }
+  .btn-assistant-toggle {
+    bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 14px !important;
+    z-index: 9998 !important;
+    display: inline-flex !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+    box-shadow: 0 8px 24px rgba(123, 51, 126, 0.5) !important;
+  }
+}
+
+/* ================= MOBILE TOP HEADER & MENU ================= */
+.mobile-header {
+  display: none;
+}
+@media (max-width: 860px) {
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    padding: 0 16px;
+    background: rgba(26, 8, 39, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    z-index: 9995;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  }
+  .mob-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .mob-logo {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #7B337E, #d946ef);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 13px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: -0.5px;
+    box-shadow: 0 2px 8px rgba(123, 51, 126, 0.4);
+  }
+  .mob-title-wrap {
+    display: flex;
+    flex-direction: column;
+  }
+  .mob-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.2;
+  }
+  .mob-sub {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.1;
+  }
+  .mob-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mob-status-pill {
+    font-size: 11px;
+    color: #c084fc;
+    background: rgba(192, 132, 252, 0.15);
+    border: 1px solid rgba(192, 132, 252, 0.3);
+    padding: 3px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .mob-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+  }
+  .mob-btn:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.18);
+  }
+  .mob-btn.active {
+    background: rgba(123, 51, 126, 0.5);
+    border-color: #d946ef;
+    color: #f5d0fe;
+  }
+  .mob-btn-sync.rotating svg {
+    animation: mobSpin 0.9s linear infinite;
+  }
+  @keyframes mobSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .mob-btn-menu {
+    background: linear-gradient(135deg, rgba(123, 51, 126, 0.7), rgba(66, 107, 194, 0.7));
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 10002;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  animation: fadeIn 0.18s ease-out;
+}
+.mobile-menu-sheet {
+  background: #ffffff;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.25);
+  animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.mobile-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.mobile-menu-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mobile-menu-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: none;
+  color: #64748b;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.mobile-menu-progress {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.mobile-menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mobile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.mobile-menu-item:hover, .mobile-menu-item:active {
+  background: #f1f5f9;
+  transform: translateY(-1px);
+}
+.mobile-menu-item.primary {
+  background: linear-gradient(135deg, #fdf4ff, #fae8ff);
+  border-color: #f0abfc;
+  color: #86198f;
+}
+.mobile-menu-item.danger {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #e11d48;
+}
+.mobile-menu-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  flex-shrink: 0;
 }
 
 
@@ -483,6 +718,29 @@ body {
 }
 .btn-edit-today-task:hover {
   opacity: 1;
+}
+.today-task-acts {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.btn-today-act {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: all 0.15s ease;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.btn-today-act:hover {
+  opacity: 1;
+  background: rgba(123, 51, 126, 0.1);
+  transform: scale(1.15);
 }
 .phase-progress-list {
   display: flex;
@@ -1033,12 +1291,36 @@ body {
   border-color: #cbd5e1;
   background: #f8fafc;
 }
+.icon-btn.delb:hover {
+  color: #e11d48 !important;
+  border-color: #fecdd3 !important;
+  background: #fff1f2 !important;
+}
 .task-more {
   display: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: 4px;
+}
+.task-more:hover {
+  color: #210635;
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+.tasks li:hover .task-more {
+  display: inline-flex;
 }
 @media (max-width: 600px) {
   .task-actions { display: none !important; }
-  .task-more { display: inline-flex !important; }
+  .task-more { display: inline-flex !important; margin-left: auto; }
 }
 .task-menu {
   display: none;
@@ -1048,8 +1330,8 @@ body {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  z-index: 20;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  z-index: 1005;
   padding: 4px;
 }
 .tasks li.menu-open .task-menu {
@@ -1648,26 +1930,44 @@ tr.done td {
 }
 
 
-/* ================= BOTONS D'AFEGIR TASCA (MODERNS & POLITS) ================= */
-.dc-add, .add-task-row-btn {
+/* ================= BOTONS D'ACCIÓ DE FILA DE DIA (AFEGIR I ORDENAR) ================= */
+.dc-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 0 10px; /* Indentació perfecta alineada amb les tasques */
+}
+
+.dc-add, .add-task-row-btn,
+.dc-sort, .btn-sort-time {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  margin-top: 10px;
-  padding: 6px 14px;
+  height: 32px;
+  box-sizing: border-box;
+  margin: 0 !important;
+  padding: 0 14px;
   border-radius: 9999px;
-  background: rgba(123, 51, 126, 0.05);
-  border: 1px dashed rgba(123, 51, 126, 0.4);
-  color: #7B337E;
   font-size: 12px;
   font-weight: 600;
+  line-height: 1;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: inherit;
   outline: none;
 }
+
+.dc-add, .add-task-row-btn {
+  background: rgba(123, 51, 126, 0.05);
+  border: 1px dashed rgba(123, 51, 126, 0.4);
+  color: #7B337E;
+}
 .dc-add svg, .add-task-row-btn svg {
   color: #7B337E;
+  flex-shrink: 0;
   transition: transform 0.25s ease;
 }
 .dc-add:hover, .add-task-row-btn:hover {
@@ -1679,6 +1979,53 @@ tr.done td {
 }
 .dc-add:hover svg, .add-task-row-btn:hover svg {
   transform: scale(1.2) rotate(90deg);
+}
+
+.dc-sort, .btn-sort-time {
+  background: rgba(66, 107, 194, 0.06);
+  border: 1px dashed rgba(66, 107, 194, 0.4);
+  color: #3b5aa0;
+}
+.dc-sort svg, .btn-sort-time svg {
+  color: #3b5aa0;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+.dc-sort:hover, .btn-sort-time:hover {
+  background: rgba(66, 107, 194, 0.14);
+  border-color: #3b5aa0;
+  color: #213a70;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(66, 107, 194, 0.12);
+}
+.dc-sort:hover svg, .btn-sort-time:hover svg {
+  transform: rotate(30deg);
+}
+
+.widget-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-sort-today {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: rgba(123, 51, 126, 0.08);
+  border: 1px solid rgba(123, 51, 126, 0.25);
+  color: #7B337E;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.btn-sort-today:hover {
+  background: #7B337E;
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .inline-add-task-form {
@@ -1936,12 +2283,37 @@ tr.done td {
   font-size: 11px;
   opacity: 0.85;
 }
+.assistant-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-clear-chat {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+.btn-clear-chat:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
 .btn-close-drawer {
   background: transparent;
   border: none;
   color: #ffffff;
   font-size: 18px;
   cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .assistant-chips-bar {
   display: flex;
@@ -2023,6 +2395,44 @@ tr.done td {
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .assistant-drawer-overlay {
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+  }
+  .assistant-drawer-card {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+  }
+  .assistant-drawer-header {
+    padding-top: max(16px, env(safe-area-inset-top));
+    flex-shrink: 0;
+  }
+  .assistant-chips-bar {
+    flex-shrink: 0;
+  }
+  .assistant-chat-messages {
+    flex: 1;
+  }
+  .assistant-drawer-input-row {
+    flex-shrink: 0;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
 }
 
 /* FAB */
@@ -2130,383 +2540,473 @@ body:has(#assistantDrawerOverlay) .btn-assistant-toggle {
   min-height: 18px;
   font-weight: 600;
 }
-</style></head><body><div id="root"></div><template id="content">
-<div class="top-dashboard">
-  <div class="dash-header-row">
-    <div>
-      <h1 class="dash-title">Planning d'Exàmens i Estudi</h1>
-      <p class="dash-subtitle">Plantilla de planificació intel·ligent · Adaptable a qualsevol grau o universitat</p>
-    </div>
-    <div class="dash-actions">
-      <a href="https://calendar.google.com" target="_blank" rel="noreferrer" class="btn-gcal">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-        Google Calendar
-      </a>
-      <a href="/calendar.ics" target="_blank" class="btn-ical" title="Subscripció al canal dinàmic iCal">
-        Canal iCal (.ics)
-      </a>
-    </div>
-  </div>
 
-  <div class="legend-box">
-    <strong>✨ Assistent IA & Gestió intel·ligent:</strong>
-    Aquesta és la teva plantilla de planificació d'estudi. Pots afegir tasques, moure-les entre dies lliures (🟢/🟡/🔴), editar-les, marcar-les com a fetes i consultar el teu assistent de Gemini per organitzar-te.
-  </div>
+/* ================= AMAGA FETS (HIDE COMPLETED) ================= */
+#bHide.on, .chip-btn.chip-btn-hide.on {
+  background: #ede9fe !important;
+  color: #5b21b6 !important;
+  border-color: #c4b5fd !important;
+}
 
-  <div class="dash-widgets-grid">
-    <div class="widget-card widget-today">
-      <div class="widget-head">
-        <span class="widget-title">📌 Agenda d'avui</span>
-        <span class="widget-badge" id="todayDateBadge">Avui</span>
-      </div>
-      <div id="todayTasksList" class="today-tasks-container">
-        <div class="empty-today-msg">Carregant tasques d'avui…</div>
-      </div>
-    </div>
+body.hide .tasks li.done,
+body.hide li.done {
+  display: none !important;
+}
 
-    <div class="widget-card widget-progress">
-      <div class="widget-head">
-        <span class="widget-title">📊 Progrés d'estudi</span>
-        <span class="widget-badge purple" id="dashGlobalPct">0%</span>
-      </div>
-      <div class="phase-progress-list" id="phaseProgressContainer"></div>
-    </div>
+body.hide .day-card.is-done {
+  display: none !important;
+}
 
-    <div class="widget-card widget-calendar">
-      <div class="widget-head">
-        <div class="cal-nav-controls">
-          <button id="prevMonthBtn" class="cal-nav-btn" type="button" aria-label="Mes anterior">‹</button>
-          <span class="widget-title" id="calMonthTitle">Calendari</span>
-          <button id="nextMonthBtn" class="cal-nav-btn" type="button" aria-label="Mes següent">›</button>
+body.hide .today-task-item.is-done {
+  display: none !important;
+}
+
+body.hide tr.is-done {
+  display: none !important;
+}
+
+body.hide .chk-item.is-done {
+  display: none !important;
+}
+
+body.hide .week:not(:has(.day-card:not(.is-done))) {
+  display: none !important;
+}
+  </style>
+</head>
+<body>
+  <template id="content">
+<div class="planning-container">
+  <!-- Capçalera Principal -->
+  <header class="main-header">
+    <div class="header-content">
+      <div class="header-badge">🌟 Open Source Academic Template</div>
+      <h1 class="header-title">Smart Study Assistant & Planner</h1>
+      <p class="header-subtitle">Planificador acadèmic universal amb secretari d'estudi autònom (Gemini AI), sincronització en viu amb Telegram Bot, calendari RFC 5545 i Git-as-a-Database.</p>
+      
+      <div class="header-stats">
+        <div class="stat-card">
+          <span class="stat-num">6</span>
+          <span class="stat-label">Assignatures</span>
         </div>
-        <span class="widget-badge blue">Interactiu</span>
-      </div>
-      <div class="interactive-cal" id="miniCalGrid"></div>
-      <div class="cal-footer-legend">
-        <span class="leg-item"><span class="dot-ind today"></span> Avui</span>
-        <span class="leg-item"><span class="dot-ind planned"></span> Amb tasques</span>
-        <span class="leg-hint">Clica a un dia per saltar-hi</span>
+        <div class="stat-card">
+          <span class="stat-num">30</span>
+          <span class="stat-label">Crèdits ECTS</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num">100%</span>
+          <span class="stat-label">Cloud-First</span>
+        </div>
       </div>
     </div>
-  </div>
+  </header>
 
-  <div class="dash-quick-index">
-    <div class="dqi-header">
-      <span class="dqi-title">📑 Índex ràpid de seccions</span>
-      <span class="dqi-hint">Clica per saltar directament al bloc desitjat</span>
+  <!-- Índex Ràpid -->
+  <nav class="quick-index-nav" id="dash-quick-index">
+    <div class="qi-label">Dreceres:</div>
+    <div class="qi-pills">
+      <a href="#agenda-avui" class="qi-pill">📌 Agenda d'avui</a>
+      <a href="#assignatures" class="qi-pill">📚 Assignatures</a>
+      <a href="#planning-setmanal" class="qi-pill">📅 Calendari Setmanal</a>
+      <a href="#lliuraments" class="qi-pill">⚠️ Lliuraments Clau</a>
+      <a href="#examens" class="qi-pill">📝 Exàmens Finals</a>
     </div>
-    <div class="dqi-chips">
-      <a href="#0-situació-i-objectius" class="dqi-chip"><span class="dqi-icon">🎯</span> 0. Objectius & Notes</a>
-      <a href="#1-metodologia-destudi" class="dqi-chip"><span class="dqi-icon">📘</span> 1. Metodologia</a>
-      <a href="#2-horari-setmanal-cada-dia-fins-a-les-23-h" class="dqi-chip"><span class="dqi-icon">⏰</span> 2. Horari Setmanal</a>
-      <a href="#3-regles-del-pla-no-negociables" class="dqi-chip"><span class="dqi-icon">⚖️</span> 3. Regles del pla</a>
-      <a href="#setmana-1-fase1" class="dqi-chip highlight"><span class="dqi-icon">🚀</span> Setmana 1</a>
-      <a href="#setmana-2-fase1" class="dqi-chip"><span class="dqi-icon">📅</span> Setmana 2</a>
+  </nav>
+
+  <!-- Secció Assignatures -->
+  <section id="assignatures" class="section-card">
+    <h2 class="section-heading">📚 Assignatures del Semestre</h2>
+    <div class="subjects-grid">
+      <div class="subject-card" style="--sub-color: #7B337E;">
+        <div class="sub-header">
+          <span class="sub-code">MD</span>
+          <span class="sub-credits">6 ECTS</span>
+        </div>
+        <h3 class="sub-name">Matemàtiques Discretes</h3>
+        <p class="sub-desc">Teoria de grafs, combinatòria, relacions d'ordre i inducció matemàtica.</p>
+      </div>
+
+      <div class="subject-card" style="--sub-color: #2563eb;">
+        <div class="sub-header">
+          <span class="sub-code">AP</span>
+          <span class="sub-credits">6 ECTS</span>
+        </div>
+        <h3 class="sub-name">Algorismes i Programació</h3>
+        <p class="sub-desc">Complexitat temporal, arbres, backtracking, algorismes voraços i grafs.</p>
+      </div>
+
+      <div class="subject-card" style="--sub-color: #059669;">
+        <div class="sub-header">
+          <span class="sub-code">BD</span>
+          <span class="sub-credits">6 ECTS</span>
+        </div>
+        <h3 class="sub-name">Sistemes de Bases de Dades</h3>
+        <p class="sub-desc">Model Entitat-Relació, disseny relacional, àlgebra relacional i consultes SQL avançades.</p>
+      </div>
+
+      <div class="subject-card" style="--sub-color: #d97706;">
+        <div class="sub-header">
+          <span class="sub-code">XC</span>
+          <span class="sub-credits">6 ECTS</span>
+        </div>
+        <h3 class="sub-name">Xarxes de Computadors</h3>
+        <p class="sub-desc">Arquitectura TCP/IP, encaminament, protocols de transport i programació de sòcols.</p>
+      </div>
+
+      <div class="subject-card" style="--sub-color: #dc2626;">
+        <div class="sub-header">
+          <span class="sub-code">ES</span>
+          <span class="sub-credits">6 ECTS</span>
+        </div>
+        <h3 class="sub-name">Enginyeria del Software</h3>
+        <p class="sub-desc">Metodologies àgils, patrons de disseny, proves unitàries i cicle de vida del programari.</p>
+      </div>
+
+      <div class="subject-card" style="--sub-color: #4b5563;">
+        <div class="sub-header">
+          <span class="sub-code">PROJ</span>
+          <span class="sub-credits">6 ECTS</span>
+        </div>
+        <h3 class="sub-name">Projecte / Feina</h3>
+        <p class="sub-desc">Desenvolupament en equip, gestió de tasques professionals i documentació tècnica.</p>
+      </div>
     </div>
-  </div>
+  </section>
+
+  <!-- Taula de Planning Setmanal -->
+  <section id="planning-setmanal" class="section-card">
+    <h2 class="section-heading">📅 Calendari Setmanal de Tasques</h2>
+    <div class="table-container">
+      <table class="planning-table">
+        <thead>
+          <tr>
+            <th style="width: 130px;">Data</th>
+            <th style="width: 140px;">Dia</th>
+            <th>Tasques d'Estudi i Activitats</th>
+          </tr>
+        </thead>
+        <tbody id="days">
+          <!-- Setmana 1 -->
+          <tr data-day="2026-11-16">
+            <td class="date-col">16-11-2026</td>
+            <td class="day-col">Dilluns</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-16-1">09:00 - 11:00 📚 MD: Teoria de Grafs i Isomorfisme</li>
+                <li data-id="2026-11-16-2">11:30 - 13:30 💻 AP: Sessió de laboratori (arbre binaris)</li>
+                <li data-id="2026-11-16-3">15:30 💼 Projecte: Reunió setmanal de coordinació d'equip</li>
+                <li data-id="2026-11-16-4">18:00 - 19:30 📖 Repàs exercicis de combinatòria</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-17">
+            <td class="date-col">17-11-2026</td>
+            <td class="day-col">Dimarts</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-17-1">10:00 - 12:00 🗄️ BD: Normalització i formes normals (1FN a 3FN)</li>
+                <li data-id="2026-11-17-2">15:00 - 17:00 🌐 XC: Pràctica de laboratori amb Wireshark</li>
+                <li data-id="2026-11-17-3">18:00 - 20:00 💻 AP: Resoldre 3 problemes del jutge online</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-18">
+            <td class="date-col">18-11-2026</td>
+            <td class="day-col">Dimecres</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-18-1">09:00 - 11:00 🚀 ES: Diagrames de seqüència UML</li>
+                <li data-id="2026-11-18-2">12:00 - 14:00 📚 MD: Resolució de problemes d'arbres</li>
+                <li data-id="2026-11-18-3">16:00 - 18:30 🗄️ BD: Redacció de l'informe de la Pràctica 1</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-19">
+            <td class="date-col">19-11-2026</td>
+            <td class="day-col">Dijous</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-19-1">10:00 - 12:00 🌐 XC: Protocols de la capa de transport (TCP vs UDP)</li>
+                <li data-id="2026-11-19-2">15:30 💼 Projecte: Revisió de codi i integració contínua</li>
+                <li data-id="2026-11-19-3">18:00 - 20:00 ⚠️ <strong>Entrega:</strong> Pràctica 1 de Bases de Dades (23:59h)</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-20">
+            <td class="date-col">20-11-2026</td>
+            <td class="day-col">Divendres</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-20-1">09:00 - 11:00 💻 AP: Algorismes de cerca en grafs (BFS/DFS)</li>
+                <li data-id="2026-11-20-2">11:30 - 13:30 🚀 ES: Sessió de proves de programari</li>
+                <li data-id="2026-11-20-3">17:00 🎯 Planificació dels objectius per al cap de setmana</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-21">
+            <td class="date-col">21-11-2026</td>
+            <td class="day-col">Dissabte</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-21-1">10:00 - 13:00 📝 Simulacre d'examen de Matemàtiques Discretes</li>
+                <li data-id="2026-11-21-2">16:00 - 18:00 💻 Implementació de l'algorisme de Dijkstra</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-22">
+            <td class="date-col">22-11-2026</td>
+            <td class="day-col">Diumenge</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-22-1">11:00 - 13:00 🗄️ Repàs de consultes amb agregacions i GROUP BY</li>
+                <li data-id="2026-11-22-2">18:00 - 19:30 📅 Organitzar la setmana entrant i revisar prioritats</li>
+              </ul>
+            </td>
+          </tr>
+
+          <!-- Setmana 2 -->
+          <tr data-day="2026-11-23">
+            <td class="date-col">23-11-2026</td>
+            <td class="day-col">Dilluns</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-23-1">09:00 - 11:00 📚 MD: Claus i coloració de grafs</li>
+                <li data-id="2026-11-23-2">11:30 - 13:30 💻 AP: Piles i cues de prioritat</li>
+                <li data-id="2026-11-23-3">15:30 💼 Projecte: Sprint review i definició de tasques</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-24">
+            <td class="date-col">24-11-2026</td>
+            <td class="day-col">Dimarts</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-24-1">10:00 - 12:00 🗄️ BD: Índexs B-Tree i optimització de consultes</li>
+                <li data-id="2026-11-24-2">15:00 - 17:00 🌐 XC: Subxarxes i direccionament IPv4/IPv6</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-25">
+            <td class="date-col">25-11-2026</td>
+            <td class="day-col">Dimecres</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-25-1">09:00 - 11:00 🚀 ES: Patrons arquitecturals (MVC, Microserveis)</li>
+                <li data-id="2026-11-25-2">12:00 - 14:00 📚 MD: Resolució de dubtes per al parcial</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-26">
+            <td class="date-col">26-11-2026</td>
+            <td class="day-col">Dijous</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-26-1">10:00 - 12:00 🌐 XC: Encaminament OSPF i BGP</li>
+                <li data-id="2026-11-26-2">16:00 - 19:00 📝 <strong>Examen Parcial:</strong> Matemàtiques Discretes (Aula A1)</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-27">
+            <td class="date-col">27-11-2026</td>
+            <td class="day-col">Divendres</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-27-1">09:00 - 11:00 💻 AP: Programació dinàmica bàsica</li>
+                <li data-id="2026-11-27-2">15:30 💼 Projecte: Tancament setmanal de lliuraments</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-28">
+            <td class="date-col">28-11-2026</td>
+            <td class="day-col">Dissabte</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-28-1">10:30 - 13:00 🌐 Exercicis de càlcul de màscares de xarxa</li>
+                <li data-id="2026-11-28-2">16:00 - 18:00 🚀 Proves d'integració del projecte</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-11-29">
+            <td class="date-col">29-11-2026</td>
+            <td class="day-col">Diumenge</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-29-1">11:00 - 13:00 📖 Lectura del capítol sobre concurrència en bases de dades</li>
+              </ul>
+            </td>
+          </tr>
+
+          <!-- Setmana 3 -->
+          <tr data-day="2026-11-30">
+            <td class="date-col">30-11-2026</td>
+            <td class="day-col">Dilluns</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-11-30-1">09:00 - 11:00 💻 AP: Problema de la motxilla (Knapsack)</li>
+                <li data-id="2026-11-30-2">15:30 💼 Projecte: Demo de funcionalitats implementades</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-12-01">
+            <td class="date-col">01-12-2026</td>
+            <td class="day-col">Dimarts</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-12-01-1">10:00 - 12:00 🗄️ BD: Transaccions, ACID i nivells d'aïllament</li>
+                <li data-id="2026-12-01-2">15:00 - 17:00 🌐 XC: Sòcols en Python (client/servidor)</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-12-02">
+            <td class="date-col">02-12-2026</td>
+            <td class="day-col">Dimecres</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-12-02-1">09:00 - 11:00 🚀 ES: Refactorització i Clean Code</li>
+                <li data-id="2026-12-02-2">17:00 - 19:00 ⚠️ <strong>Entrega:</strong> Pràctica 2 d'Algorismes (23:59h)</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-12-03">
+            <td class="date-col">03-12-2026</td>
+            <td class="day-col">Dijous</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-12-03-1">10:00 - 12:00 🌐 XC: Seguretat en xarxes (TLS/SSL, SSH)</li>
+                <li data-id="2026-12-03-2">15:30 💼 Projecte: Sessió de resolució de bugs</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr data-day="2026-12-04">
+            <td class="date-col">04-12-2026</td>
+            <td class="day-col">Divendres</td>
+            <td>
+              <ul class="tasks">
+                <li data-id="2026-12-04-1">09:00 - 12:00 🗄️ Sessió pràctica d'SQL tuning</li>
+                <li data-id="2026-12-04-2">16:00 - 18:00 📚 Repàs general de teoria</li>
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Lliuraments Clau -->
+  <section id="lliuraments" class="section-card">
+    <h2 class="section-heading">⚠️ Lliuraments i Dates Clau</h2>
+    <div class="table-container">
+      <table class="planning-table">
+        <thead>
+          <tr>
+            <th>Data Límit</th>
+            <th>Assignatura</th>
+            <th>Acte d'Avaluació</th>
+            <th>Pes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>19-11-2026 (23:59h)</td>
+            <td>🗄️ BD</td>
+            <td>Pràctica 1: Disseny Relacional i SQL</td>
+            <td>15%</td>
+          </tr>
+          <tr>
+            <td>02-12-2026 (23:59h)</td>
+            <td>💻 AP</td>
+            <td>Pràctica 2: Cerca en Grafs i Arbres</td>
+            <td>20%</td>
+          </tr>
+          <tr>
+            <td>15-12-2026 (23:59h)</td>
+            <td>🌐 XC</td>
+            <td>Pràctica de Laboratori: Servidor de Sòcols</td>
+            <td>15%</td>
+          </tr>
+          <tr>
+            <td>08-01-2027 (23:59h)</td>
+            <td>🚀 ES</td>
+            <td>Projecte Final de Programari (Release v1.0)</td>
+            <td>30%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Calendari d'Exàmens -->
+  <section id="examens" class="section-card">
+    <h2 class="section-heading">📝 Calendari d'Exàmens Finals</h2>
+    <div class="table-container">
+      <table class="planning-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Hora</th>
+            <th>Assignatura</th>
+            <th>Aula</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>26-11-2026</td>
+            <td>16:00 - 19:00</td>
+            <td>📚 Matemàtiques Discretes (Parcial)</td>
+            <td>Aula A1</td>
+          </tr>
+          <tr>
+            <td>11-01-2027</td>
+            <td>09:00 - 12:00</td>
+            <td>💻 Algorismes i Programació (Final)</td>
+            <td>Aula B2</td>
+          </tr>
+          <tr>
+            <td>14-01-2027</td>
+            <td>15:00 - 18:00</td>
+            <td>🗄️ Sistemes de Bases de Dades (Final)</td>
+            <td>Aula C1</td>
+          </tr>
+          <tr>
+            <td>18-01-2027</td>
+            <td>09:00 - 12:00</td>
+            <td>🌐 Xarxes de Computadors (Final)</td>
+            <td>Aula B1</td>
+          </tr>
+          <tr>
+            <td>22-01-2027</td>
+            <td>15:00 - 18:00</td>
+            <td>🚀 Enginyeria del Software (Final)</td>
+            <td>Aula A2</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
+  </template>
 
-<!-- SECCIÓ 0: SITUACIÓ I OBJECTIUS -->
-<h2 id="0-situació-i-objectius">0. Situació i objectius</h2>
-<p>Taula resum de les assignatures amb examen final, ponderació de les notes de curs i objectius mínims per aprovar.</p>
+  <script id="state" type="application/json">{"done":[],"t":1731974400000}</script>
 
-<table>
-  <thead>
-    <tr>
-      <th>Assignatura</th>
-      <th>Nota actual</th>
-      <th>Fórmula</th>
-      <th>Risc</th>
-      <th>Mínim per aprovar</th>
-      <th>Objectiu</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Assignatura A (Exemple: Matemàtiques)</td>
-      <td><strong>6,20</strong> · Parcials aprovats</td>
-      <td>Final = 0.5·Curs + 0.5·Examen</td>
-      <td>🟢 BAIX</td>
-      <td>3,80 a l'examen final</td>
-      <td>6,50 per pujar mitjana</td>
-    </tr>
-    <tr>
-      <td>Assignatura B (Exemple: Algorísmia)</td>
-      <td><strong>4,90</strong> · A la vora de l'aprovat</td>
-      <td>Final = 0.4·Lab + 0.6·Teoria</td>
-      <td>🟠 MITJÀ</td>
-      <td>5,10 al test final</td>
-      <td>7,00 per consolidar</td>
-    </tr>
-    <tr>
-      <td>Assignatura C (Exemple: Sistemes)</td>
-      <td><strong>3,80</strong> · Cal apretar</td>
-      <td>Final = 0.3·Parcial + 0.7·Final</td>
-      <td>🔴 ALT</td>
-      <td>5,50 a la prova final</td>
-      <td>6,00 per aprovar amb seguretat</td>
-    </tr>
-    <tr>
-      <td>Assignatura D (Exemple: Projectes)</td>
-      <td><strong>7,50</strong> · Molt bona trajectòria</td>
-      <td>Final = 0.6·Entregues + 0.4·Defensa</td>
-      <td>🟢 MOLT BAIX</td>
-      <td>3,00 a la presentació</td>
-      <td>8,00 nota final</td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- CALENDARI CLAU -->
-<h3>Calendari clau d'exàmens i entregues</h3>
-<table>
-  <thead>
-    <tr>
-      <th>Data</th>
-      <th>Què</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>25/11</td>
-      <td>Entrega del projecte d'Assignatura D ⚠️ Lliurament abans de les 23:59h</td>
-    </tr>
-    <tr>
-      <td>05/12</td>
-      <td>Qüestionari d'avaluació contínua d'Assignatura B</td>
-    </tr>
-    <tr>
-      <td>15/12</td>
-      <td>Examen parcial / lliurament pràctica d'Assignatura A</td>
-    </tr>
-    <tr>
-      <td>10/01</td>
-      <td>Examen final d'Assignatura C (Aula 101, 09:00h)</td>
-    </tr>
-    <tr>
-      <td>14/01</td>
-      <td>Examen final d'Assignatura B (Aula 204, 15:00h)</td>
-    </tr>
-    <tr>
-      <td>18/01</td>
-      <td>Examen final d'Assignatura A (Aula 302, 09:00h)</td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- SECCIÓ 1: METODOLOGIA -->
-<h2 id="1-metodologia-destudi">1. Metodologia d'estudi</h2>
-<p>Principis pedagògics per maximitzar el rendiment en període d'exàmens.</p>
-
-<h3>Aprendre resolent exàmens reals</h3>
-<p>Prioritza fer problemes d'exàmens d'anys anteriors abans que rellegir apunts passivament. Marca cada fallada i analitza el per què de l'error.</p>
-
-<h3>Simulacres amb temps real</h3>
-<p>Un cop per setmana, fes un examen complet amb cronòmetre i sense consultar apunts per acostumar-te a la pressió del temps.</p>
-
-<h3>Blocs de descans i recuperació</h3>
-<p>Aplica la tècnica Pomodoro o blocs d'estudi de 50 minuts amb 10 minuts de descans sense pantalles.</p>
-
-<blockquote>
-  <strong>Prompt per a Gemini / IA:</strong> Actua com el meu tutor acadèmic. Pregunta'm 3 conceptes clau sobre el tema d'avui i avalua les meves respostes amb feedback constructiu pas a pas.
-</blockquote>
-
-<!-- SECCIÓ 2: HORARI SETMANAL -->
-<h2 id="2-horari-setmanal-cada-dia-fins-a-les-23-h">2. Horari setmanal (fins a les 23h)</h2>
-<p>Estructura setmanal típica de referència.</p>
-
-<table>
-  <thead>
-    <tr>
-      <th>Dia</th>
-      <th>Classes i feina</th>
-      <th>Bloc principal</th>
-      <th>Bloc de vespre</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Dilluns</td>
-      <td>Classes 08:00–12:00</td>
-      <td>15:00–18:30 (Assignatura A)</td>
-      <td>20:30–22:30 (Repàs de problemes)</td>
-    </tr>
-    <tr>
-      <td>Dimarts</td>
-      <td>Classes 08:00–12:00</td>
-      <td>15:00–18:30 (Assignatura B)</td>
-      <td>20:30–22:30 (Test i teoria)</td>
-    </tr>
-    <tr>
-      <td>Dimecres</td>
-      <td>Pràctiques 10:00–14:00</td>
-      <td>16:00–19:30 (Assignatura C)</td>
-      <td>20:30–22:30 (Resolució de dubtes)</td>
-    </tr>
-    <tr>
-      <td>Dijous</td>
-      <td>Classes 08:00–12:00</td>
-      <td>15:00–18:30 (Assignatura D)</td>
-      <td>20:30–22:30 (Entrega setmanal)</td>
-    </tr>
-    <tr>
-      <td>Divendres</td>
-      <td>Classes 08:00–12:00</td>
-      <td>15:00–18:00 (Repàs general)</td>
-      <td>20:30–22:00 (Checklist setmanal)</td>
-    </tr>
-    <tr>
-      <td>Dissabte</td>
-      <td>Lliure / Descans matí</td>
-      <td>10:00–13:30 (Simulacre)</td>
-      <td>17:00–19:30 (Correcció)</td>
-    </tr>
-    <tr>
-      <td>Diumenge</td>
-      <td>Descans matí</td>
-      <td>16:30–19:30 (Planificació de la setmana)</td>
-      <td>21:00–22:30 (Lectura tranquil·la)</td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- SECCIÓ 3: REGLES -->
-<h2 id="3-regles-del-pla-no-negociables">3. Regles del pla (no negociables)</h2>
-<ol>
-  <li><strong>Recuperar dies perduts:</strong> Si un dia no pots estudiar per imprevistos, redistribueix les tasques utilitzant el botó ⏩ Mou als dies més tranquils.</li>
-  <li><strong>Entregues abans de les 20h:</strong> No deixis cap lliurament per a l'última hora de la nit.</li>
-  <li><strong>Simulacres amb condicions d'examen:</strong> Sense telèfon, amb cronòmetre i en silenci.</li>
-  <li><strong>Límit de les 23:00h:</strong> A partir de les 23h es tanca l'estudi per garantir 7-8 hores de son abans dels exàmens.</li>
-</ol>
-
-<!-- SECCIÓ 4: FASE 1 -->
-<h2 id="4-fase-1--repas-i-consolidacio">4. FASE 1: Repàs i consolidació · 16/11 → 06/12</h2>
-<p>Primer bloc de treball intensiu per consolidar la base abans de l'sprint final.</p>
-
-<h3 id="setmana-1-fase1">Setmana 1 (Exemple)</h3>
-<table>
-  <thead>
-    <tr>
-      <th>Dia</th>
-      <th>Data</th>
-      <th>Tasques</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr data-day="2026-11-16">
-      <td>Dl 16</td>
-      <td>16 de novembre</td>
-      <td>
-        <ul class="tasks">
-          <li data-id="demo-1">Assignatura A: repàs dels temes 1 i 2</li>
-          <li data-id="demo-2">Assignatura B: resolució de 5 exercicis pràctics</li>
-          <li data-id="demo-3">Planificar objectius setmanals amb l'Assistent Gemini</li>
-        </ul>
-      </td>
-    </tr>
-    <tr data-day="2026-11-17">
-      <td>Dt 17</td>
-      <td>17 de novembre</td>
-      <td>
-        <ul class="tasks">
-          <li data-id="demo-4">Assignatura C: exercicis de teoria del bloc 1</li>
-          <li data-id="demo-5">Assignatura B: test d'autoavaluació</li>
-        </ul>
-      </td>
-    </tr>
-    <tr data-day="2026-11-18">
-      <td>Dc 18</td>
-      <td>18 de novembre</td>
-      <td>
-        <ul class="tasks">
-          <li data-id="demo-6">Assignatura A: simulacre parcial 1 (1 hora)</li>
-          <li data-id="demo-7">Assignatura D: avançar informe d'entrega</li>
-        </ul>
-      </td>
-    </tr>
-    <tr data-day="2026-11-19">
-      <td>Dj 19</td>
-      <td>19 de novembre</td>
-      <td>
-        <ul class="tasks">
-          <li data-id="demo-8">Assignatura B: correcció d'errors del simulacre</li>
-          <li data-id="demo-9">Repàs de fitxers clau <code>Dossier_Tema1</code></li>
-        </ul>
-      </td>
-    </tr>
-    <tr data-day="2026-11-20">
-      <td>Dv 20</td>
-      <td>20 de novembre</td>
-      <td>
-        <ul class="tasks">
-          <li data-id="demo-10">Assignatura C: problemes d'examen 2025Q1</li>
-          <li data-id="demo-11">Checklist de final de setmana</li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-<h3 id="setmana-2-fase1">Setmana 2 (Exemple)</h3>
-<table>
-  <thead>
-    <tr>
-      <th>Dia</th>
-      <th>Data</th>
-      <th>Tasques</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr data-day="2026-11-23">
-      <td>Dl 23</td>
-      <td>23 de novembre</td>
-      <td>
-        <ul class="tasks">
-          <li data-id="demo-12">Assignatura A: estudi del bloc 3</li>
-          <li data-id="demo-13">Assignatura B: exercicis de càmeres i visualització</li>
-        </ul>
-      </td>
-    </tr>
-    <tr data-day="2026-11-24">
-      <td>Dt 24</td>
-      <td>24 de novembre</td>
-      <td>
-        <ul class="tasks">
-          <li data-id="demo-14">Assignatura C: formulació i consultes avançades</li>
-          <li data-id="demo-15">🚨 Entrega de la pràctica d'Assignatura D</li>
-        </ul>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- SECCIÓ 8: CHECKLISTS -->
-<h2 id="8-checklists-del-dia-abans">8. Checklists del dia abans</h2>
-<p>Què comprovar abans de cada examen per anar-hi amb tranquil·litat.</p>
-
-<p><strong>Exàmens teòrics</strong> Repassa el formulari oficial, les unitats de càlcul i prepara calculadora homologada i bolígrafs de recanvi.</p>
-<ul>
-  <li>DNI / Carnet d'estudiant a la motxilla</li>
-  <li>Calculadora amb bateria revisada</li>
-  <li>Pernoctar mínim 7 hores</li>
-</ul>
-
-<p><strong>Proves de laboratori / codi</strong> Assegura't de conèixer les rutes de carpetes de l'entorn d'examen, comandes de compilació i criteris de memòria.</p>
-<ul>
-  <li>Repàs de comandes de compilació i flags</li>
-  <li>Estructures bàsiques i templates de codi</li>
-</ul>
-
-<!-- SECCIÓ 9: PUNTS DE CONTROL -->
-<h2 id="9-punts-de-control-ajusta-el-pla-si-cal">9. Punts de control</h2>
-<p>Revisions periòdiques del pla.</p>
-<ul>
-  <li><strong>Punt 1 (Final Fase 1):</strong> Comprova que portes més del 70% de les tasques completades. Si vas per sota, reajusta els blocs de vespre.</li>
-  <li><strong>Punt 2 (Inici sprint final):</strong> Dedica el 90% del temps a simulacres d'examen.</li>
-</ul>
-</template><script id="state" type="application/json">{"done": ["demo-1", "demo-2"], "t": 1795030000000}</script><script id="app">
+  <script id="app">
 (function(){
-var TITLE = "Planning finals Q1 2026-27";
+var TITLE = "Smart Study Assistant & Planner";
 var stateEl = document.getElementById('state');
 var state = { done: [] };
 try { state = JSON.parse(stateEl.textContent) || state; } catch(e){}
@@ -2519,7 +3019,17 @@ try {
 } catch(e){}
 
 var AUTH_KEY = 'planning_auth_pass_v1';
-var EXPECTED_HASH = '1795022026';
+var EXPECTED_HASH = "16023df26ed384352d6820bc638c686ac3ef71424a51ca3f0941a96d7c948332";
+
+function appendCalSync(li) {
+  if (li && !li.querySelector('.cal-sync') && !li.textContent.includes('⚠️')) {
+    var s = document.createElement('span');
+    s.className = 'cal-sync';
+    s.style.display = 'none';
+    s.textContent = '⚠️';
+    li.appendChild(s);
+  }
+}
 
 var root = document.getElementById('root');
 var bar = document.createElement('div'); bar.id = 'bar';
@@ -2550,7 +3060,7 @@ function esc(s){
 
 // ===================== VISTES I UI STATE (V2) =====================
 var UI_KEY = 'planning-ui-v2';
-var ui = { view: 'today', days: {}, weeks: {}, acc: {} };
+var ui = { view: 'today', days: {}, weeks: {}, acc: {}, hideDone: false };
 try {
   var _u = JSON.parse(localStorage.getItem(UI_KEY) || 'null');
   if (_u) {
@@ -2558,10 +3068,39 @@ try {
     ui.days = _u.days || {};
     ui.weeks = _u.weeks || {};
     ui.acc = _u.acc || {};
+    ui.hideDone = !!_u.hideDone;
   }
 } catch(e){}
 function saveUi(){
   try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch(e){}
+}
+
+function toggleHideDone(forceState) {
+  if (forceState !== undefined) {
+    ui.hideDone = !!forceState;
+  } else {
+    ui.hideDone = !ui.hideDone;
+  }
+  document.body.classList.toggle('hide', !!ui.hideDone);
+  saveUi();
+
+  var bh = document.getElementById('bHide');
+  if (bh) {
+    bh.classList.toggle('on', !!ui.hideDone);
+    bh.innerHTML = svg(ui.hideDone ? 'eye' : 'eyeoff', 16) + '<span class="lbl">' + (ui.hideDone ? 'Mostra fets' : 'Amaga fets') + '</span>';
+  }
+
+  var bMobHide = document.getElementById('bMobHide');
+  if (bMobHide) {
+    bMobHide.classList.toggle('active', !!ui.hideDone);
+    bMobHide.innerHTML = svg(ui.hideDone ? 'eye' : 'eyeoff', 18);
+    bMobHide.setAttribute('title', ui.hideDone ? 'Mostra tasques fetes' : 'Amaga tasques fetes');
+  }
+
+  main.querySelectorAll('.chip-btn-hide').forEach(function(btn){
+    btn.classList.toggle('on', !!ui.hideDone);
+    btn.innerHTML = svg(ui.hideDone ? 'eye' : 'eyeoff', 15) + '<span>' + (ui.hideDone ? 'Mostra fets' : 'Amaga fets') + '</span>';
+  });
 }
 
 var VIEW_ORDER = ['today', 'plan', 'exams', 'guide', 'checks', 'control'];
@@ -2592,6 +3131,7 @@ var IC = {
   sparkle: '<path d="m12 3 1.9 5.4L19.5 10l-5.6 1.7L12 17l-1.9-5.3L4.5 10l5.6-1.6z"/><path d="M19 16v4M17 18h4"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   list: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
   eyeoff: '<path d="M17.9 17.9A10.1 10.1 0 0 1 12 20c-6.5 0-10-8-10-8a17.7 17.7 0 0 1 4.1-5.1M9.9 4.2A9.7 9.7 0 0 1 12 4c6.5 0 10 8 10 8a17.8 17.8 0 0 1-2.2 3.2M1 1l22 22"/>',
   refresh: '<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5M3 21v-5h5"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
@@ -2606,9 +3146,12 @@ var IC = {
   pen: '<path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5h.01"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  arrowup: '<path d="m18 15-6-6-6 6"/>',
+  arrowdown: '<path d="m6 9 6 6 6-6"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
   dot: '<circle cx="12" cy="12" r="3"/>',
-  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'
+  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  trash: '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>'
 };
 function svg(name, size){
   size = size || 18;
@@ -2667,14 +3210,17 @@ function applyActiveView(){
   bar.querySelectorAll('.sb-link').forEach(function(b){
     b.classList.toggle('active', b.dataset.view === current);
   });
-  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 function gotoView(viewId){
   if (VIEW_ORDER.indexOf(viewId) < 0) viewId = 'today';
+  var isDiff = ui.view !== viewId;
   ui.view = viewId;
   saveUi();
   applyActiveView();
+  if (isDiff) {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
 }
 
 function gotoDay(day){
@@ -2700,7 +3246,7 @@ function buildSidebar(){
     return '<button type="button" class="sb-link" data-view="' + id + '">' + svg(VIEW_META[id].icon, 18) + '<span class="lbl">' + VIEW_META[id].label + '</span></button>';
   }).join('');
   bar.innerHTML =
-    '<div class="sb-brand"><span class="sb-logo">PF</span><div><div class="sb-title">Planning finals</div><div class="sb-sub">Q1 2026-27 · FIB</div></div></div>' +
+    '<div class="sb-brand"><span class="sb-logo">PF</span><div><div class="sb-title">Study Assistant</div><div class="sb-sub">Universal Academic Planner</div></div></div>' +
     '<nav class="sb-nav" aria-label="Vistes">' + nav + '</nav>' +
     '<div class="sb-progress"><div class="sb-prog-top"><span>Progrés global</span><span id="pc">0%</span></div><div id="prog"><i></i></div></div>' +
     '<div class="sb-actions">' +
@@ -2754,7 +3300,15 @@ function splitSections(root){
   });
   return {dash:dash,secs:secs};
 }
+// ===================== GRADE CALC (CALCULADORA DE NOTES) =====================
+
+
+
+
+
+
 function render(){
+  var prevY = window.scrollY;
   main.innerHTML='';counted=[];todayRow=null;dayRows=[];calEvents=[];nextCard=null;
   var work=document.createElement('div');
   work.appendChild(tpl.content.cloneNode(true));
@@ -2773,6 +3327,7 @@ function render(){
     views[vid].appendChild(buildSection(sec));
   });
   if(views.plan.querySelector('.phase'))views.plan.insertBefore(buildPlanToolbar(),views.plan.children[1]||null);
+  
   VIEW_ORDER.forEach(function(id){main.appendChild(views[id]);});
   finalizeCards();
   chipFiles(main);
@@ -2780,6 +3335,9 @@ function render(){
   applyActiveView();
   counts();
   updateWidgets();
+  if (prevY > 0) {
+    window.scrollTo(0, prevY);
+  }
 }
 
 function buildSection(sec){
@@ -3038,6 +3596,142 @@ function taskStats(card){
   });
   return {total:t,done:n};
 }
+function getTaskTimeWeight(nodeOrText) {
+  var text = (typeof nodeOrText === 'string') ? nodeOrText : (nodeOrText.textContent || '');
+  var clean = text.replace(/<[^>]+>/g, '').replace(/^⏩\s*/, '').trim();
+  var isDuration = /^\d+\s*h\s+d'/i.test(clean);
+
+  // 1. Exact time HH:MM (e.g. 10:00, 18:30h, 14:00, 08:00)
+  var mHM = !isDuration && clean.match(/(?:^|[^\d])([01]?\d|2[0-3])[:.]([0-5]\d)/);
+  if (mHM) {
+    var h = parseInt(mHM[1], 10), m = parseInt(mHM[2], 10);
+    return 1000 + h * 60 + m;
+  }
+
+  // 2. Hour range (e.g. 8–10, 12–14)
+  var mRange = !isDuration && clean.match(/(?:^|[^\d])([01]?\d|2[0-3])\s*[-–—]\s*([01]?\d|2[0-3])\b/);
+  if (mRange) {
+    var hr = parseInt(mRange[1], 10);
+    return 1000 + hr * 60;
+  }
+
+  // 3. Single hour prefix (e.g. "15 h:", "a les 18h")
+  var mH = !isDuration && (clean.match(/(?:a les\s+|les\s+|^)([01]?\d|2[0-3])\s*h\b/i) || clean.match(/^([01]?\d|2[0-3])\s*h\s*[:]/i));
+  if (mH) {
+    var hh = parseInt(mH[1], 10);
+    return 1000 + hh * 60;
+  }
+
+  // 4. Franges del dia (time periods)
+  if (/(?:^|\s|[.,:;])mat[íi](?:$|\s|[.,:;])/i.test(clean) || /☀️/.test(clean)) {
+    return 1000 + 9 * 60;
+  }
+  if (/(?:^|\s|[.,:;])migdia(?:$|\s|[.,:;])/i.test(clean)) {
+    return 1000 + 13 * 60 + 30;
+  }
+  if (/(?:^|\s|[.,:;])tarda(?:$|\s|[.,:;])/i.test(clean) || /🌆|🌅/.test(clean)) {
+    return 1000 + 16 * 60;
+  }
+  if (/(?:^|\s|[.,:;])(?:vespre|nit)(?:$|\s|[.,:;])/i.test(clean) || /🌙/.test(clean)) {
+    return 1000 + 20 * 60 + 30;
+  }
+
+  // 5. Feina / Projecte if mentioned
+    if (/feina|projecte|work/i.test(clean)) {
+    return 1000 + 14 * 60;
+  }
+
+  // 6. Tasques flexibles / generals sense hora fixa: a dalt de tot
+  return 100;
+}
+
+function sortDayTasksByTime(card) {
+  if (!card) return;
+  var day = card.dataset.day;
+  var ul = card.querySelector('ul.tasks');
+  if (!ul) return;
+
+  var lis = Array.prototype.slice.call(ul.children).filter(function(li) {
+    return li.tagName === 'LI' && !li.classList.contains('movedaway') && !li.classList.contains('note');
+  });
+
+  if (lis.length <= 1) return;
+
+  lis.sort(function(a, b) {
+    return getTaskTimeWeight(a) - getTaskTimeWeight(b);
+  });
+
+  lis.forEach(function(li) {
+    ul.appendChild(li);
+  });
+
+  var tplUl = tpl.content.querySelector('tr[data-day="' + day + '"] ul.tasks');
+  if (tplUl) {
+    lis.forEach(function(li) {
+      var tplLi = tpl.content.querySelector('li[data-id="' + li.dataset.id + '"]');
+      if (tplLi) tplUl.appendChild(tplLi);
+    });
+  }
+
+  changed();
+  updateTodayWidget();
+  syncCloud({ action: 'sort_time', day: day });
+
+  if (st) {
+    st.textContent = '✓ ordenat per hora';
+    setTimeout(function() { if (st && st.textContent === '✓ ordenat per hora') st.textContent = ''; }, 3000);
+  }
+}
+
+function moveTaskOrder(id, direction) {
+  var li = main.querySelector('li[data-id="' + id + '"]');
+  if (!li) return;
+  var ul = li.parentElement;
+  var card = li.closest('.day-card');
+  var day = card ? card.dataset.day : null;
+
+  if (direction === 'up') {
+    var prev = li.previousElementSibling;
+    while (prev && (prev.classList.contains('movedaway') || prev.classList.contains('note'))) {
+      prev = prev.previousElementSibling;
+    }
+    if (prev) {
+      ul.insertBefore(li, prev);
+    }
+  } else if (direction === 'down') {
+    var next = li.nextElementSibling;
+    while (next && (next.classList.contains('movedaway') || next.classList.contains('note'))) {
+      next = next.nextElementSibling;
+    }
+    if (next) {
+      ul.insertBefore(next, li);
+    }
+  }
+
+  if (day) {
+    var tplUl = tpl.content.querySelector('tr[data-day="' + day + '"] ul.tasks');
+    var tplLi = tpl.content.querySelector('li[data-id="' + id + '"]');
+    if (tplUl && tplLi) {
+      if (direction === 'up') {
+        var tplPrev = tplLi.previousElementSibling;
+        if (tplPrev) tplUl.insertBefore(tplLi, tplPrev);
+      } else if (direction === 'down') {
+        var tplNext = tplLi.nextElementSibling;
+        if (tplNext) tplUl.insertBefore(tplNext, tplLi);
+      }
+    }
+  }
+
+  changed();
+  updateTodayWidget();
+  syncCloud({ action: 'reorder', day: day });
+
+  if (st) {
+    st.textContent = '✓ ordre actualitzat';
+    setTimeout(function() { if (st && st.textContent === '✓ ordre actualitzat') st.textContent = ''; }, 3000);
+  }
+}
+
 function setupDay(card){
   var day=card.dataset.day;
   if(day===todayISO){card.classList.add('today');todayRow=card;}
@@ -3073,21 +3767,36 @@ function setupDay(card){
       syncCloud({action:'toggle_done',taskId:id,done:cb.checked});
     });
     var act=el('div','task-actions');
+    var ub=el('button','icon-btn upb',svg('arrowup',15));ub.type='button';ub.title='Puja la tasca una posició';ub.setAttribute('aria-label','Puja');
+    ub.onclick=function(e){e.stopPropagation();moveTaskOrder(id,'up');};
+    var db=el('button','icon-btn downb',svg('arrowdown',15));db.type='button';db.title='Baixa la tasca una posició';db.setAttribute('aria-label','Baixa');
+    db.onclick=function(e){e.stopPropagation();moveTaskOrder(id,'down');};
     var mb=el('button','icon-btn mvb',svg('move',17));mb.type='button';mb.title='Mou a un altre dia';mb.setAttribute('aria-label','Mou');
     mb.onclick=function(){openMove(li,id,card);};
     var eb=el('button','icon-btn edb',svg('edit',16));eb.type='button';eb.title='Edita la tasca';eb.setAttribute('aria-label','Edita');
     eb.onclick=function(){editItem(id,li);};
-    act.appendChild(mb);act.appendChild(eb);
+    var delb=el('button','icon-btn delb',svg('trash',15));delb.type='button';delb.title='Elimina definitivament la tasca';delb.setAttribute('aria-label','Elimina');
+    delb.onclick=function(e){e.stopPropagation();deleteTask(id,li);};
+    act.appendChild(ub);act.appendChild(db);act.appendChild(mb);act.appendChild(eb);act.appendChild(delb);
     var more=el('button','icon-btn task-more',svg('more',18));more.type='button';more.title='Més accions';more.setAttribute('aria-label','Més accions');
-    var menu=el('div','task-menu','<button type="button" class="tm-item tm-mv">Mou a un altre dia</button><button type="button" class="tm-item tm-ed">Edita</button>');
+    var menu=el('div','task-menu',
+      '<button type="button" class="tm-item tm-up">⬆️ Puja</button>'+
+      '<button type="button" class="tm-item tm-down">⬇️ Baixa</button>'+
+      '<button type="button" class="tm-item tm-mv">Mou a un altre dia</button>'+
+      '<button type="button" class="tm-item tm-ed">Edita</button>'+
+      '<button type="button" class="tm-item tm-del" style="color:#e11d48; font-weight:700;">🗑️ Elimina</button>'
+    );
     more.onclick=function(e){
       e.stopPropagation();
       var open=li.classList.contains('menu-open');
       document.querySelectorAll('li.menu-open').forEach(function(x){x.classList.remove('menu-open');});
       if(!open)li.classList.add('menu-open');
     };
+    menu.querySelector('.tm-up').onclick=function(){li.classList.remove('menu-open');moveTaskOrder(id,'up');};
+    menu.querySelector('.tm-down').onclick=function(){li.classList.remove('menu-open');moveTaskOrder(id,'down');};
     menu.querySelector('.tm-mv').onclick=function(){li.classList.remove('menu-open');openMove(li,id,card);};
     menu.querySelector('.tm-ed').onclick=function(){li.classList.remove('menu-open');editItem(id,li);};
+    menu.querySelector('.tm-del').onclick=function(){li.classList.remove('menu-open');deleteTask(id,li);};
     li.appendChild(act);li.appendChild(more);li.appendChild(menu);
     tx.title='Doble clic per editar la tasca';
     tx.ondblclick=function(){editItem(id,li);};
@@ -3095,7 +3804,15 @@ function setupDay(card){
   var addBtn=el('button','dc-add add-task-row-btn',svg('plus',14)+'<span>Afegir tasca</span>');
   addBtn.type='button';addBtn.title='Afegeix una tasca a '+label(card);
   addBtn.onclick=function(){openInlineAddTask(card,day);};
-  body.appendChild(addBtn);
+
+  var sortBtn=el('button','dc-sort btn-sort-time',svg('clock',14)+'<span>Ordena per hora</span>');
+  sortBtn.type='button';sortBtn.title='Ordena les tasques cronològicament (flexibles a dalt i cites per hora)';
+  sortBtn.onclick=function(){sortDayTasksByTime(card);};
+
+  var actionsRow=el('div','dc-actions-row');
+  actionsRow.appendChild(addBtn);
+  actionsRow.appendChild(sortBtn);
+  body.appendChild(actionsRow);
   if(movedLis.length||noteLis.length){
     var det=el('details','dc-moved');
     var n=movedLis.length;
@@ -3158,7 +3875,8 @@ function buildPlanToolbar(){
   };
   var b2=el('button','chip-btn',svg('chev',15)+'<span>Desplega-ho tot</span>');b2.type='button';b2.onclick=function(){setAll(false);};
   var b3=el('button','chip-btn',svg('chev',15)+'<span>Plega-ho tot</span>');b3.type='button';b3.onclick=function(){setAll(true);};
-  tb.appendChild(b1);tb.appendChild(b2);tb.appendChild(b3);
+  var b4=el('button','chip-btn chip-btn-hide'+(ui.hideDone?' on':''),svg(ui.hideDone?'eye':'eyeoff',15)+'<span>'+(ui.hideDone?'Mostra fets':'Amaga fets')+'</span>');b4.type='button';b4.onclick=function(){toggleHideDone();};
+  tb.appendChild(b1);tb.appendChild(b2);tb.appendChild(b3);tb.appendChild(b4);
   return tb;
 }
 
@@ -3514,6 +4232,38 @@ function undoMove(id){
   changed();
 }
 
+function deleteTask(id, li) {
+  var txSpan = li ? li.querySelector('.tx') : null;
+  var desc = txSpan ? txSpan.textContent.replace(/^⏩\s*de\s*[^:]+:\s*/, '').trim() : (li ? li.textContent.trim() : 'aquesta tasca');
+  if (!confirm('Vols eliminar definitivament aquesta tasca del teu planning?\n\n«' + desc + '»')) {
+    return;
+  }
+
+  // 1. Eliminar del template principal
+  var tplLi = tpl.content.querySelector('li[data-id="' + id + '"]');
+  if (tplLi) tplLi.remove();
+
+  // 2. Si tenia còpia moguda
+  if (li && li.dataset && li.dataset.copy) {
+    var cp = tpl.content.querySelector('li[data-id="' + li.dataset.copy + '"]');
+    if (cp) cp.remove();
+    done.delete(li.dataset.copy);
+  }
+  done.delete(id);
+
+  // 3. Eliminar de la vista actual
+  if (li) {
+    var card = li.closest('.day-card');
+    li.remove();
+    if (card) rowState(card);
+  }
+
+  // 4. Re-renderitzar per sincronitzar comptadors i estat
+  render();
+  changed();
+  syncCloud({ action: 'delete_task', taskId: id });
+}
+
 function editItem(id, li) {
   var oldModal = document.getElementById('editTaskModalOverlay');
   if (oldModal) oldModal.remove();
@@ -3542,9 +4292,12 @@ function editItem(id, li) {
         '<input type="checkbox" id="checkBold" ' + (hasStrong ? 'checked' : '') + ' /> <b>Negreta</b>' +
       '</label>' +
     '</div>' +
-    '<div class="task-modal-actions">' +
-      '<button type="button" class="inline-task-cancel" id="btnCancelEdit">Cancel·la</button>' +
-      '<button type="button" class="inline-task-save" id="btnSaveEdit">Desa canvis</button>' +
+    '<div class="task-modal-actions" style="display:flex; justify-content:space-between; align-items:center;">' +
+      '<button type="button" id="btnDeleteInModal" style="background:#fff1f2; color:#e11d48; border:1px solid #fecdd3; padding:8px 14px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer;">🗑️ Elimina</button>' +
+      '<div style="display:flex; gap:8px;">' +
+        '<button type="button" class="inline-task-cancel" id="btnCancelEdit">Cancel·la</button>' +
+        '<button type="button" class="inline-task-save" id="btnSaveEdit">Desa canvis</button>' +
+      '</div>' +
     '</div>' +
   '</div>';
 
@@ -3559,6 +4312,10 @@ function editItem(id, li) {
   }
 
   document.getElementById('btnCancelEdit').onclick = closeModal;
+  document.getElementById('btnDeleteInModal').onclick = function() {
+    closeModal();
+    deleteTask(id, li);
+  };
   overlay.onclick = function(e) { if (e.target === overlay) closeModal(); };
 
   function applyEdit() {
@@ -3633,6 +4390,7 @@ function openInlineAddTask(card, day) {
       var newId = day + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 4);
       newLi.dataset.id = newId;
       newLi.textContent = text;
+      appendCalSync(newLi);
       targetUl.appendChild(newLi);
 
       render();
@@ -3718,6 +4476,7 @@ function openAddTaskModal(preselectedDay) {
       var newId = day + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 4);
       newLi.dataset.id = newId;
       newLi.textContent = text;
+      appendCalSync(newLi);
       targetUl.appendChild(newLi);
 
       closeModal();
@@ -3777,10 +4536,24 @@ function fetchLatestFromCloud(silent) {
       if (cloudT > localT) {
         state = data.state;
         done = new Set(state.done || []);
+        var prevY = window.scrollY;
         if (data.templateHtml && data.templateHtml !== tpl.innerHTML) {
           tpl.innerHTML = data.templateHtml;
+          render();
+          if (prevY > 0) window.scrollTo(0, prevY);
+        } else {
+          main.querySelectorAll('ul.tasks > li').forEach(function(li){
+            if (li.dataset.id) {
+              var isD = done.has(li.dataset.id);
+              var cb = li.querySelector('input[type=checkbox]');
+              if (cb) cb.checked = isD;
+              li.classList.toggle('done', isD);
+            }
+          });
+          main.querySelectorAll('.day-card').forEach(rowState);
+          counts();
+          updateWidgets();
         }
-        render();
         try { localStorage.setItem(LS, JSON.stringify(state)); } catch(e){}
         if (st) {
           st.textContent = '✓ actualitzat del núvol';
@@ -3808,9 +4581,15 @@ function updateWidgets() {
 function updateTodayWidget() {
   var container = document.getElementById('todayTasksList');
   var badge = document.getElementById('todayDateBadge');
+  var sortBtn = document.getElementById('btnSortToday');
   if (!container) return;
 
   var tr = todayRow || main.querySelector('.day-card[data-day="' + todayISO + '"]') || nextCard;
+  if (sortBtn) {
+    sortBtn.onclick = function() {
+      if (tr) sortDayTasksByTime(tr);
+    };
+  }
   if (!tr) {
     container.innerHTML = '<div class="empty-today-msg">No hi ha tasques programades per avui.</div>';
     if (badge) badge.textContent = todayISO;
@@ -3861,15 +4640,52 @@ function updateTodayWidget() {
     div.appendChild(cb);
     div.appendChild(span);
 
+    var actsDiv = document.createElement('div');
+    actsDiv.className = 'today-task-acts';
+
+    var upToday = document.createElement('button');
+    upToday.className = 'btn-today-act';
+    upToday.innerHTML = '⬆️';
+    upToday.title = 'Puja la tasca una posició';
+    upToday.onclick = function(e) {
+      e.stopPropagation();
+      moveTaskOrder(id, 'up');
+    };
+
+    var downToday = document.createElement('button');
+    downToday.className = 'btn-today-act';
+    downToday.innerHTML = '⬇️';
+    downToday.title = 'Baixa la tasca una posició';
+    downToday.onclick = function(e) {
+      e.stopPropagation();
+      moveTaskOrder(id, 'down');
+    };
+
     var editBtn = document.createElement('button');
-    editBtn.className = 'btn-edit-today-task';
+    editBtn.className = 'btn-today-act';
     editBtn.innerHTML = '✏️';
     editBtn.title = 'Edita o marca urgent';
     editBtn.onclick = function(e) {
       e.stopPropagation();
       editItem(id, li);
     };
-    div.appendChild(editBtn);
+
+    var delToday = document.createElement('button');
+    delToday.className = 'btn-today-act btn-today-del';
+    delToday.innerHTML = '🗑️';
+    delToday.title = 'Elimina la tasca';
+    delToday.style.color = '#e11d48';
+    delToday.onclick = function(e) {
+      e.stopPropagation();
+      var mainLi = main.querySelector('li[data-id="' + id + '"]');
+      deleteTask(id, mainLi || li);
+    };
+
+    actsDiv.appendChild(upToday);
+    actsDiv.appendChild(downToday);
+    actsDiv.appendChild(editBtn);
+    actsDiv.appendChild(delToday);
+    div.appendChild(actsDiv);
 
     container.appendChild(div);
   });
@@ -3986,6 +4802,7 @@ function openIndexModal() {
 
   var sections = [
     { id: 'today-shortcut', title: "📌 Agenda d'avui (Dia actual)", icon: '📌', sub: 'Salta directament a les tasques d\'avui', view: 'today' },
+    { id: 'grade-calc', title: '📊 Calculadora de Notes (Grade Calc)', icon: '📊', sub: 'Calcula la nota provisional i la necessària per aprovar', view: 'exams' },
     { id: '0-situació-i-objectius', title: '0. Situació i objectius', icon: '🎯', sub: 'Assignatures, notes, fórmules i objectius de seguretat', view: 'exams' },
     { id: '1-metodologia-destudi', title: '1. Metodologia d\'estudi', icon: '📘', sub: 'Aprendre fent exàmens, simulacres i blocs de vespre', view: 'guide' },
     { id: '2-horari-setmanal-cada-dia-fins-a-les-23-h', title: '2. Horari setmanal', icon: '⏰', sub: 'Horaris diaris fins a les 23h i descans', view: 'guide' },
@@ -4067,7 +4884,30 @@ function openIndexModal() {
 }
 
 // ===================== ASSISTENT GEMINI (IA) =====================
-var assistantHistory = [];
+var ASSISTANT_STORAGE_KEY = 'pf_assistant_history_v1';
+var assistantHistory = (function() {
+  try {
+    var raw = localStorage.getItem(ASSISTANT_STORAGE_KEY);
+    if (raw) {
+      var arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return arr.slice(-30);
+    }
+  } catch (e) {}
+  return [];
+})();
+
+function saveAssistantHistory() {
+  try {
+    localStorage.setItem(ASSISTANT_STORAGE_KEY, JSON.stringify(assistantHistory.slice(-30)));
+  } catch (e) {}
+}
+
+function clearAssistantHistory() {
+  assistantHistory = [];
+  try {
+    localStorage.removeItem(ASSISTANT_STORAGE_KEY);
+  } catch (e) {}
+}
 
 function setupAssistantFloatingButton() {
   var oldBtn = document.getElementById('btnAssistantToggle');
@@ -4110,7 +4950,10 @@ function openAssistantDrawer() {
           '<p>Powered by Google Gemini</p>' +
         '</div>' +
       '</div>' +
-      '<button id="btnCloseAssistant" class="btn-close-drawer" aria-label="Tancar">✕</button>' +
+      '<div class="assistant-header-actions">' +
+        '<button id="btnClearAssistant" class="btn-clear-chat" title="Netejar conversa" aria-label="Netejar conversa">🗑️ Neteja</button>' +
+        '<button id="btnCloseAssistant" class="btn-close-drawer" aria-label="Tancar">✕</button>' +
+      '</div>' +
     '</div>' +
     '<div class="assistant-chips-bar">' +
       '<button type="button" class="assistant-chip" data-query="Quan creus que hauria de fer un simulacre d\'examen de BD?">💡 Quan tinc forats?</button>' +
@@ -4136,6 +4979,17 @@ function openAssistantDrawer() {
   document.getElementById('btnCloseAssistant').onclick = closeDrawer;
   overlay.onclick = function(e) { if (e.target === overlay) closeDrawer(); };
 
+  var clearBtn = document.getElementById('btnClearAssistant');
+  if (clearBtn) {
+    clearBtn.onclick = function() {
+      if (confirm('Vols esborrar l\'historial d\'aquesta conversa amb l\'assistent?')) {
+        clearAssistantHistory();
+        msgBox.innerHTML = '';
+        appendAssistantBubble('assistant', 'Hola! 🌟 Hem reiniciat la conversa. En què et puc ajudar avui?');
+      }
+    };
+  }
+
   overlay.querySelectorAll('.assistant-chip').forEach(function(chip) {
     chip.onclick = function() {
       input.value = chip.dataset.query;
@@ -4144,11 +4998,14 @@ function openAssistantDrawer() {
   });
 
   if (assistantHistory.length === 0) {
-    appendAssistantBubble('assistant', 'Hola Hira! 🌟 Soc el teu assistent intel·ligent integrat directament al teu planning.\n\nEm pots demanar:\n• **Buscador de forats:** *«Quan creus que hauria de fer X?»* per analitzar els dies més tranquils.\n• **Canvis directes:** *«Apunta\'m una trucada de PAR divendres»* o *«esborra tal tasca»*.\n• **Consultes d\'agenda:** *«Què he de fer demà?»*\n\nEn què et puc ajudar avui?');
+    appendAssistantBubble('assistant', 'Hola! 🌟 Soc el teu assistent d\'estudi intel·ligent integrat directament al teu planning.\n\nEm pots demanar:\n• **Buscador de forats:** *«Quan creus que hauria de fer X?»* per analitzar els dies més tranquils.\n• **Canvis directes:** *«Apunta\'m una trucada de PAR divendres»* o *«esborra tal tasca»*.\n• **Consultes d\'agenda:** *«Què he de fer demà?»*\n\nEn què et puc ajudar avui?');
   } else {
     assistantHistory.forEach(function(item) {
       appendAssistantBubble(item.sender, item.text);
     });
+    setTimeout(function() {
+      msgBox.scrollTop = msgBox.scrollHeight;
+    }, 50);
   }
 
   function handleSend() {
@@ -4158,6 +5015,7 @@ function openAssistantDrawer() {
 
     appendAssistantBubble('user', query);
     assistantHistory.push({ sender: 'user', text: query });
+    saveAssistantHistory();
 
     var typingId = appendAssistantBubble('assistant', 'Pensant i consultant el teu planning... ⏳');
 
@@ -4166,9 +5024,8 @@ function openAssistantDrawer() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: query,
-        todayISO: todayISO,
-        state: snapshot(),
-        planningHtml: tpl.innerHTML.slice(0, 150000)
+        history: assistantHistory.map(function(h){ return { role: h.sender === 'user' ? 'user' : 'assistant', text: h.text }; }),
+        todayISO: todayISO
       })
     })
     .then(function(r) { return r.json(); })
@@ -4179,9 +5036,10 @@ function openAssistantDrawer() {
       if (data && data.reply) {
         appendAssistantBubble('assistant', data.reply);
         assistantHistory.push({ sender: 'assistant', text: data.reply });
+        saveAssistantHistory();
 
         if (data.actions && data.actions.length > 0) {
-          appendAssistantActionCard(data.actions, data.actionSummary || 'Vols aplicar aquests canvis al teu planning?');
+          appendAssistantActionCard(data.actions, data.summary || data.actionSummary || 'Vols aplicar aquests canvis al teu planning?');
         }
       } else {
         appendAssistantBubble('assistant', 'No he pogut obtenir una resposta vàlida. Si us plau, torna-ho a provar!');
@@ -4200,7 +5058,9 @@ function openAssistantDrawer() {
     if (e.key === 'Enter') handleSend();
     if (e.key === 'Escape') closeDrawer();
   };
-  input.focus();
+  if (window.innerWidth > 600) {
+    input.focus();
+  }
 }
 
 function appendAssistantBubble(sender, rawText) {
@@ -4224,11 +5084,14 @@ function appendAssistantActionCard(actions, summary) {
   card.className = 'assistant-action-card';
 
   var actionsListHtml = actions.map(function(act) {
-    if (act.type === 'add_task') {
+    var type = act.type;
+    if (type === 'add' || type === 'add_task') {
       return '<li>➕ <b>Afegir a ' + esc(act.day) + ':</b> ' + esc(act.text) + '</li>';
-    } else if (act.type === 'move_task') {
-      return '<li>⏩ <b>Moure tasca</b> a ' + esc(act.toDay) + '</li>';
-    } else if (act.type === 'toggle_done') {
+    } else if (type === 'move' || type === 'move_task') {
+      return '<li>⏩ <b>Moure tasca:</b> ' + esc(act.query || act.text || '') + ' a ' + esc(act.target_date || act.toDay || '') + '</li>';
+    } else if (type === 'delete' || type === 'delete_task') {
+      return '<li>🗑️ <b>Esborrar:</b> ' + esc(act.query || act.text || '') + '</li>';
+    } else if (type === 'toggle_done') {
       return '<li>✓ <b>Marcar com a ' + (act.done ? 'feta' : 'pendent') + '</b></li>';
     }
     return '<li>' + esc(JSON.stringify(act)) + '</li>';
@@ -4246,28 +5109,29 @@ function appendAssistantActionCard(actions, summary) {
   var dismissBtn = card.querySelector('.btn-action-dismiss');
 
   applyBtn.onclick = function() {
-    actions.forEach(function(act) {
-      if (act.type === 'add_task') {
-        var targetUl = tpl.content.querySelector('tr[data-day="' + act.day + '"] ul.tasks');
-        if (targetUl) {
-          var newLi = document.createElement('li');
-          var newId = act.day + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 4);
-          newLi.dataset.id = newId;
-          newLi.textContent = act.text;
-          targetUl.appendChild(newLi);
-        }
-      } else if (act.type === 'move_task') {
-        moveItem(act.taskId, 'Assistent', act.toDay);
-      } else if (act.type === 'toggle_done') {
-        if (act.done) done.add(act.taskId); else done.delete(act.taskId);
+    applyBtn.disabled = true;
+    applyBtn.textContent = 'Aplicant... ⏳';
+
+    fetch('/api/assistant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'execute_actions',
+        actions: actions
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res && res.ok) {
+        card.innerHTML = '<div class="action-card-applied">✓ Canvis aplicats correctament al teu planning i al calendari! 🎉</div>';
+        fetchLatestFromCloud(false);
+      } else {
+        card.innerHTML = '<div class="action-card-applied" style="color:#e11d48">⚠️ Error en aplicar els canvis.</div>';
       }
+    })
+    .catch(function(err) {
+      card.innerHTML = '<div class="action-card-applied" style="color:#e11d48">⚠️ Error de xarxa en aplicar els canvis.</div>';
     });
-
-    render();
-    changed();
-    syncCloud({ action: 'bulk_apply', appliedCount: actions.length });
-
-    card.innerHTML = '<div class="action-card-applied">✓ Canvis aplicats correctament al teu planning! 🎉</div>';
   };
 
   dismissBtn.onclick = function() {
@@ -4340,20 +5204,212 @@ function changed(){
   }
 }
 
+// ===================== MOBILE HEADER & MENU =====================
+function buildMobileHeader() {
+  var old = document.getElementById('mobileHeader');
+  if (old) old.remove();
+
+  var hdr = document.createElement('header');
+  hdr.id = 'mobileHeader';
+  hdr.className = 'mobile-header';
+  hdr.innerHTML =
+    '<div class="mob-header-left">' +
+      '<div class="mob-logo">PF</div>' +
+      '<div class="mob-title-wrap">' +
+        '<div class="mob-title">Study Assistant</div>' +
+        '<div class="mob-sub">Academic Planner</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="mob-header-right">' +
+      '<span id="mobStatus" class="mob-status-pill" style="display:none"></span>' +
+      '<button type="button" id="bMobHide" class="mob-btn" title="Amaga o mostra fets" aria-label="Amaga fets">' +
+        svg('eyeoff', 18) +
+      '</button>' +
+      '<button type="button" id="bMobSync" class="mob-btn mob-btn-sync" title="Sincronitza amb el núvol" aria-label="Sincronitza">' +
+        svg('refresh', 18) +
+      '</button>' +
+      '<button type="button" id="bMobMenu" class="mob-btn mob-btn-menu" title="Menú d\'opcions" aria-label="Menú">' +
+        svg('list', 20) +
+      '</button>' +
+    '</div>';
+  return hdr;
+}
+
+function openMobileMenuModal() {
+  var old = document.getElementById('mobileMenuModal');
+  if (old) {
+    old.remove();
+    document.body.classList.remove('modal-open');
+    return;
+  }
+  document.body.classList.add('modal-open');
+
+  var overlay = document.createElement('div');
+  overlay.id = 'mobileMenuModal';
+  overlay.className = 'mobile-menu-overlay';
+
+  var total = counted.length;
+  var dCount = 0;
+  for (var i = 0; i < total; i++) {
+    if (done.has(counted[i])) dCount++;
+  }
+  var pct = total ? Math.round((dCount / total) * 100) : 0;
+
+  overlay.innerHTML =
+    '<div class="mobile-menu-sheet">' +
+      '<div class="mobile-menu-header">' +
+        '<div class="mobile-menu-title">' +
+          '<span>📱 Menú i opcions</span>' +
+        '</div>' +
+        '<button type="button" id="btnCloseMobMenu" class="mobile-menu-close" aria-label="Tancar">✕</button>' +
+      '</div>' +
+      '<div class="mobile-menu-progress">' +
+        '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#475569;margin-bottom:6px;">' +
+          '<span>Progrés global</span><span>' + pct + '% (' + dCount + '/' + total + ')</span>' +
+        '</div>' +
+        '<div style="height:8px;background:#e2e8f0;border-radius:99px;overflow:hidden;">' +
+          '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#7B337E,#426bc2);border-radius:99px;transition:width 0.3s ease;"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="mobile-menu-actions">' +
+        '<button type="button" id="bMobMenuAssistant" class="mobile-menu-item primary">' +
+          '<div class="mobile-menu-icon" style="background:#fae8ff;color:#a21caf;">✨</div>' +
+          '<div>' +
+            '<div style="font-weight:700;">Assistent IA (Gemini)</div>' +
+            '<div style="font-size:12px;color:#701a75;font-weight:normal;">Xat per reorganitzar o demanar consells</div>' +
+          '</div>' +
+        '</button>' +
+        '<button type="button" id="bMobMenuAddTask" class="mobile-menu-item">' +
+          '<div class="mobile-menu-icon">➕</div>' +
+          '<div>' +
+            '<div style="font-weight:700;">Nova tasca</div>' +
+            '<div style="font-size:12px;color:#64748b;font-weight:normal;">Afegeix una tasca a qualsevol dia</div>' +
+          '</div>' +
+        '</button>' +
+        '<button type="button" id="bMobMenuSync" class="mobile-menu-item">' +
+          '<div class="mobile-menu-icon">🔄</div>' +
+          '<div>' +
+            '<div style="font-weight:700;">Sincronitza ara</div>' +
+            '<div style="font-size:12px;color:#64748b;font-weight:normal;">Comprova canvis fets des de Telegram o PC</div>' +
+          '</div>' +
+        '</button>' +
+        '<button type="button" id="bMobMenuHide" class="mobile-menu-item">' +
+          '<div class="mobile-menu-icon">👁️</div>' +
+          '<div>' +
+            '<div style="font-weight:700;">' + (ui.hideDone ? 'Mostra tasques fetes' : 'Amaga tasques fetes') + '</div>' +
+            '<div style="font-size:12px;color:#64748b;font-weight:normal;">Neteja la llista d\'allò completat</div>' +
+          '</div>' +
+        '</button>' +
+        '<button type="button" id="bMobMenuIndex" class="mobile-menu-item">' +
+          '<div class="mobile-menu-icon">📑</div>' +
+          '<div>' +
+            '<div style="font-weight:700;">Índex de seccions</div>' +
+            '<div style="font-size:12px;color:#64748b;font-weight:normal;">Navega ràpid a qualsevol part del pla</div>' +
+          '</div>' +
+        '</button>' +
+        '<button type="button" id="bMobMenuLogout" class="mobile-menu-item danger">' +
+          '<div class="mobile-menu-icon" style="background:#ffe4e6;color:#e11d48;">🚪</div>' +
+          '<div>' +
+            '<div style="font-weight:700;">Tanca sessió</div>' +
+            '<div style="font-size:12px;color:#9f1239;font-weight:normal;">Surt d\'aquest dispositiu</div>' +
+          '</div>' +
+        '</button>' +
+      '</div>' +
+      '<div style="text-align:center;margin-top:18px;font-size:11px;color:#94a3b8;">Smart Study Assistant & Planner</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+
+  function closeMenu() {
+    overlay.remove();
+    document.body.classList.remove('modal-open');
+  }
+
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) closeMenu();
+  });
+  var btnClose = document.getElementById('btnCloseMobMenu');
+  if (btnClose) btnClose.onclick = closeMenu;
+
+  var bAssistant = document.getElementById('bMobMenuAssistant');
+  if (bAssistant) bAssistant.onclick = function() {
+    closeMenu();
+    openAssistantDrawer();
+  };
+  var bAdd = document.getElementById('bMobMenuAddTask');
+  if (bAdd) bAdd.onclick = function() {
+    closeMenu();
+    openAddTaskModal();
+  };
+  var bSync = document.getElementById('bMobMenuSync');
+  if (bSync) bSync.onclick = function() {
+    closeMenu();
+    var bMobSync = document.getElementById('bMobSync');
+    if (bMobSync) bMobSync.classList.add('rotating');
+    fetchLatestFromCloud(false).finally(function() {
+      setTimeout(function() { if (bMobSync) bMobSync.classList.remove('rotating'); }, 600);
+    });
+  };
+  var bHide = document.getElementById('bMobMenuHide');
+  if (bHide) bHide.onclick = function() {
+    closeMenu();
+    toggleHideDone();
+  };
+  var bIndex = document.getElementById('bMobMenuIndex');
+  if (bIndex) bIndex.onclick = function() {
+    closeMenu();
+    openIndexModal();
+  };
+  var bLogout = document.getElementById('bMobMenuLogout');
+  if (bLogout) bLogout.onclick = function() {
+    closeMenu();
+    var origLogout = document.getElementById('bLogout');
+    if (origLogout) origLogout.click();
+  };
+}
+
 // ===================== START & AUTH =====================
 function startApp(){
   root.innerHTML = '';
+  var mobHdr = buildMobileHeader();
+  root.appendChild(mobHdr);
   buildSidebar();
   root.appendChild(bar);
   root.appendChild(main);
 
   st = document.getElementById('status');
+  if (st) {
+    try {
+      var obs = new MutationObserver(function() {
+        var mob = document.getElementById('mobStatus');
+        if (mob && st) {
+          mob.textContent = st.textContent;
+          mob.style.display = st.textContent ? 'inline-block' : 'none';
+        }
+      });
+      obs.observe(st, { childList: true, characterData: true, subtree: true });
+    } catch(e){}
+  }
+
+  var bMobSync = document.getElementById('bMobSync');
+  if (bMobSync) bMobSync.onclick = function() {
+    bMobSync.classList.add('rotating');
+    fetchLatestFromCloud(false).finally(function() {
+      setTimeout(function() { bMobSync.classList.remove('rotating'); }, 600);
+    });
+  };
+  var bMobHide = document.getElementById('bMobHide');
+  if (bMobHide) bMobHide.onclick = function() { toggleHideDone(); };
+  var bMobMenu = document.getElementById('bMobMenu');
+  if (bMobMenu) bMobMenu.onclick = function() { openMobileMenuModal(); };
+
   var bIdx = document.getElementById('bIndex');
   if (bIdx) bIdx.onclick = function(){ openIndexModal(); };
   var bAss = document.getElementById('bAssistant');
   if (bAss) bAss.onclick = function(){ openAssistantDrawer(); };
   var bh = document.getElementById('bHide');
-  if (bh) bh.onclick = function(){ document.body.classList.toggle('hide'); bh.classList.toggle('on'); };
+  if (bh) bh.onclick = function(){ toggleHideDone(); };
+  toggleHideDone(ui.hideDone);
   var bAdd = document.getElementById('bAddTask');
   if (bAdd) bAdd.onclick = function(){ openAddTaskModal(); };
   var bRef = document.getElementById('bRefresh');
@@ -4377,7 +5433,7 @@ function startApp(){
       var targetId = href.replace(/^#/, '');
       if (targetId) {
         var viewId = 'plan';
-        if (targetId.startsWith('0-')) viewId = 'exams';
+        if (targetId.startsWith('0-') || targetId === 'grade-calc') viewId = 'exams';
         else if (targetId.startsWith('1-') || targetId.startsWith('2-') || targetId.startsWith('3-')) viewId = 'guide';
         else if (targetId.startsWith('8-')) viewId = 'checks';
         else if (targetId.startsWith('9-')) viewId = 'control';
@@ -4450,7 +5506,7 @@ function showLogin(){
   function doLogin(){
     var v = passInput.value.trim();
     if (!v) { err.textContent = 'Introdueix una contrasenya'; return; }
-    var valid = ['1795022026', 'finals2026', 'hira2026', 'finals'].indexOf(v.toLowerCase()) >= 0 || v === EXPECTED_HASH;
+    var valid = ['study2026', 'study'].indexOf(v.toLowerCase()) >= 0 || v === EXPECTED_HASH;
     if (valid) {
       try {
         if (remember.checked) {
@@ -4486,4 +5542,6 @@ function checkAuth(){
 
 checkAuth();
 })();
-</script></body></html>
+  </script>
+</body>
+</html>
