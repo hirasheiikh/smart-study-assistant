@@ -1,8 +1,8 @@
-﻿const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const AUTH_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const GH_TOKEN = process.env.GH_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const REPO = process.env.GH_REPO || 'owner/repo';
+const REPO = process.env.GH_REPO || 'hirasheiikh/smart-study-assistant';
 
 function decodeEntities(str) {
   if (!str) return '';
@@ -22,7 +22,7 @@ function getMadridDate(offsetDays = 0) {
 function cleanTaskTitle(text) {
   if (!text) return '';
   let clean = text.trim();
-  clean = clean.replace(/^(afegeix|afegir|apunta|apuntar|posa|posar|anota|anotar|recorda(?:'m)?|he de|cal)\s*[:,-]?\s*/i, '');
+  clean = clean.replace(/^(afegeix|afegir|apunta|apuntar|posa|posar|anota|anotar|recorda(?:\s*\'?m)?|he de|cal)\s*[:,-]?\s*/i, '');
   clean = clean.replace(/\s+(demà|dema|avui|avui a la nit|passat demà|dilluns|dimarts|dimecres|dijous|divendres|dissabte|diumenge)$/i, '');
   clean = clean.trim();
   if (clean.length > 0) {
@@ -31,45 +31,35 @@ function cleanTaskTitle(text) {
   return clean;
 }
 
-function resolveTargetDate(text) {
-  const low = (text || '').toLowerCase();
-  const todayStr = getMadridDate(0);
-  const tomorrowStr = getMadridDate(1);
+async function sendTelegram(chatId, text, replyMarkup = null) {
+  if (!BOT_TOKEN) return;
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+  const body = {
+    chat_id: chatId || CHAT_ID,
+    text: text,
+    parse_mode: 'Markdown'
+  };
+  if (replyMarkup) body.reply_markup = replyMarkup;
 
-  const numMatch = low.match(/\b(\d{1,2})[\/\.-](\d{1,2})\b/);
-  if (numMatch) {
-    const d = numMatch[1].padStart(2, '0');
-    const m = numMatch[2].padStart(2, '0');
-    return { date: `2026-${m}-${d}`, label: `${d}/${m}` };
-  }
-
-  const dayMatch = low.match(/\b(?:dia|el)\s+(\d{1,2})\b/);
-  if (dayMatch) {
-    const d = dayMatch[1].padStart(2, '0');
-    return { date: `2026-11-${d}`, label: `${d}/11` };
-  }
-
-  if (low.includes('passat demà') || low.includes('dema passat') || low.includes('demà passat')) {
-    return { date: getMadridDate(2), label: 'demà passat' };
-  }
-  if (low.includes('demà') || low.includes('dema')) {
-    return { date: tomorrowStr, label: 'demà' };
-  }
-  if (low.includes('dijous') || low.includes('dj')) return { date: '2026-11-19', label: 'Dj 19' };
-  if (low.includes('divendres') || low.includes('dv')) return { date: '2026-11-20', label: 'Dv 20' };
-  if (low.includes('dissabte') || low.includes('ds') || low.includes('finde')) return { date: '2026-11-21', label: 'Ds 21' };
-  if (low.includes('diumenge') || low.includes('dg')) return { date: '2026-11-22', label: 'Dg 22' };
-  if (low.includes('dilluns') || low.includes('dl')) return { date: '2026-11-23', label: 'Dl 23' };
-  if (low.includes('dimarts') || low.includes('dt')) return { date: '2026-11-24', label: 'Dt 24' };
-  if (low.includes('dimecres') || low.includes('dc')) return { date: '2026-11-25', label: 'Dc 25' };
-  return { date: todayStr, label: 'avui' };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
 }
 
-// Telegram API Helpers
-async function sendTelegram(chatId, text, replyMarkup = null) {
-  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-  const body = { chat_id: chatId, text: text, parse_mode: 'Markdown' };
+async function editTelegramMessage(chatId, messageId, text, replyMarkup = null) {
+  if (!BOT_TOKEN) return;
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`;
+  const body = {
+    chat_id: chatId,
+    message_id: messageId,
+    text: text,
+    parse_mode: 'Markdown'
+  };
   if (replyMarkup) body.reply_markup = replyMarkup;
+
   await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -77,7 +67,8 @@ async function sendTelegram(chatId, text, replyMarkup = null) {
   });
 }
 
-async function answerCallbackQuery(callbackQueryId, text = '') {
+async function answerCallbackQuery(callbackQueryId, text) {
+  if (!BOT_TOKEN) return;
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`;
   await fetch(url, {
     method: 'POST',
@@ -86,25 +77,13 @@ async function answerCallbackQuery(callbackQueryId, text = '') {
   });
 }
 
-async function editTelegramMessage(chatId, messageId, text, replyMarkup = null) {
-  const url = `https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`;
-  const body = { chat_id: chatId, message_id: messageId, text: text, parse_mode: 'Markdown' };
-  if (replyMarkup) body.reply_markup = replyMarkup;
-  await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-}
-
-// GitHub API Helpers
 async function getGitHubFile() {
   const url = `https://api.github.com/repos/${REPO}/contents/index.html`;
   const res = await fetch(url, {
     headers: {
       'Authorization': `Bearer ${GH_TOKEN}`,
       'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'PlanningBot'
+      'User-Agent': 'SmartStudyTelegramBot'
     }
   });
   if (!res.ok) throw new Error(`GitHub get failed: ${res.status}`);
@@ -121,7 +100,7 @@ async function saveGitHubFile(content, sha, message) {
     headers: {
       'Authorization': `Bearer ${GH_TOKEN}`,
       'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'PlanningBot'
+      'User-Agent': 'SmartStudyTelegramBot'
     },
     body: JSON.stringify({ message: message, content: b64, sha: sha, branch: 'main' })
   });
@@ -144,33 +123,7 @@ function updateState(content, newState) {
   return content.replace(/<script id="state"[^>]*>(.*?)<\/script>/s, `<script id="state" type="application/json">${jsonStr}</script>`);
 }
 
-function parseTasksForDate(content, dateStr) {
-  const state = getState(content);
-  const doneSet = new Set(Array.isArray(state.done) ? state.done : []);
-
-  const rowRegex = new RegExp(`<tr[^>]*data-day="${dateStr}"[^>]*>(.*?)</tr>`, 's');
-  const rowMatch = content.match(rowRegex);
-  if (!rowMatch) return [];
-
-  const taskRegex = /<li\s+data-id="([^"]+)"([^>]*)>(.*?)<\/li>/gs;
-  const tasks = [];
-  let m;
-  while ((m = taskRegex.exec(rowMatch[1])) !== null) {
-    const id = m[1];
-    const attrs = m[2] || '';
-    const rawInner = m[3];
-    const isDone = doneSet.has(id);
-    const isMoved = attrs.includes('movedaway');
-    const cleanText = decodeEntities(rawInner.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
-
-    tasks.push({ id, text: cleanText, done: isDone, moved: isMoved, raw: rawInner, attrs: attrs });
-  }
-  return tasks;
-}
-
 function parseAllTasks(content) {
-  const state = getState(content);
-  const doneSet = new Set(Array.isArray(state.done) ? state.done : []);
   const all = [];
   const rowRegex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>(.*?)<\/tr>/gs;
   let rm;
@@ -181,226 +134,158 @@ function parseAllTasks(content) {
     let tm;
     while ((tm = taskRegex.exec(rowContent)) !== null) {
       const id = tm[1];
-      const attrs = tm[2] || '';
       const raw = tm[3];
-      const isMovedAway = attrs.includes('movedaway');
-      const isDone = doneSet.has(id);
       const text = decodeEntities(raw.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
-      all.push({ day, id, text, raw, attrs, isMovedAway, isDone });
+      all.push({ day, id, text, raw });
     }
   }
   return all;
 }
 
-function getUpcomingScheduleOverview(content, fromDateStr, daysCount = 14) {
+function getUpcomingScheduleOverview(content, fromDateStr, daysCount = 30) {
   const state = getState(content);
   const doneSet = new Set(Array.isArray(state.done) ? state.done : []);
   const allDays = [];
-  const regex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>(.*?)<\/tr>/gs;
+  const regex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>.*?<td>(.*?)<\/td>.*?<td><ul class="tasks">(.*?)<\/ul><\/td>.*?<\/tr>/gs;
   let m;
+
   while ((m = regex.exec(content)) !== null) {
     const day = m[1];
-    if (day < fromDateStr) continue;
-    const inner = m[2];
-    const taskRegex = /<li\s+data-id="([^"]+)"([^>]*)>(.*?)<\/li>/gs;
+    const dayLabel = m[2].replace(/<[^>]+>/g, '').trim();
+    const tasksHtml = m[3];
+
     const tasks = [];
-    let tm;
-    while ((tm = taskRegex.exec(inner)) !== null) {
-      const id = tm[1];
-      const attrs = tm[2] || '';
-      const text = decodeEntities(tm[3].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
-      const isDone = doneSet.has(id);
-      const isMoved = attrs.includes('movedaway');
-      if (!isMoved) {
-        tasks.push({ id, text, isDone, isWork: text.toLowerCase().includes('feina') || false });
+    const liRegex = /<li([^>]*)>(.*?)<\/li>/gs;
+    let li;
+    while ((li = liRegex.exec(tasksHtml)) !== null) {
+      const attrs = li[1];
+      const raw = li[2];
+      const idMatch = attrs.match(/data-id="([^"]+)"/);
+      const id = idMatch ? idMatch[1] : '';
+      const isNote = attrs.includes('note');
+      const isMovedAway = attrs.includes('movedaway');
+
+      if (!isMovedAway && id) {
+        const text = decodeEntities(raw.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+        const isDone = doneSet.has(id);
+        const isWork = text.toLowerCase().includes('feina');
+        tasks.push({ id, text, isDone, isWork, isNote });
       }
     }
-    allDays.push({ day, tasks, pendingCount: tasks.filter(t => !t.isDone).length, totalCount: tasks.length });
-    if (allDays.length >= daysCount) break;
+    allDays.push({ day, dayLabel, tasks });
   }
-  return allDays;
+
+  allDays.sort((a, b) => a.day.localeCompare(b.day));
+  const filtered = allDays.filter(d => d.day >= fromDateStr).slice(0, daysCount);
+
+  let out = '';
+  filtered.forEach(d => {
+    out += `📅 ${d.day} (${d.dayLabel}):\n`;
+    if (d.tasks.length === 0) {
+      out += '   - (Sense tasques)\n';
+    } else {
+      d.tasks.forEach(t => {
+        const mark = t.isDone ? 'fet' : 'pendent';
+        const workTag = t.isWork ? ' [feina]' : '';
+        out += `   - [${mark}] ${t.text}${workTag}\n`;
+      });
+    }
+  });
+  return out;
 }
 
-// 🧠 Execució atòmica d'accions sobre el contingut HTML
-function executeActionBatch(initialContent, actions) {
-  let updated = initialContent;
-  const executionLog = [];
+function executeActionBatch(content, actions) {
+  let updated = content;
+  const log = [];
+  const allTasks = parseAllTasks(content);
 
   for (const act of actions) {
-    if (act.type === 'delete') {
-      const q = (act.query || '').toLowerCase().trim();
-      const all = parseAllTasks(updated);
-      const matches = all.filter(t => {
-        if (t.isMovedAway) return false;
-        const textMatch = t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8)));
-        if (!textMatch) return false;
-        if (act.day) return t.day === act.day;
-        return true;
-      });
+    if (!act || !act.type) continue;
 
-      for (const target of matches) {
-        const liRegex = new RegExp(`\\s*<li[^>]*data-id="${target.id}"[^>]*>.*?</li>`, 's');
-        if (updated.match(liRegex)) {
-          updated = updated.replace(liRegex, '');
-          executionLog.push(`🗑️ Eliminada (${target.day}): "${target.text}"`);
-        }
-      }
-    } else if (act.type === 'add') {
-      const day = act.day || getMadridDate(1);
-      const clean = cleanTaskTitle(act.text);
+    if (act.type === 'add') {
+      const day = act.day;
+      const text = cleanTaskTitle(act.text);
       const isWork = Boolean(act.is_work);
-      const newId = `${day}-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 100)}`;
-      const formattedLi = isWork
-        ? `<li data-id="${newId}">💼 <strong>Feina:</strong> ${clean}<span class="cal-sync" style="display:none">⚠️</span></li>`
-        : `<li data-id="${newId}">${clean}<span class="cal-sync" style="display:none">⚠️</span></li>`;
+      if (!day || !text) continue;
+
+      const newId = `${day}-${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 90 + 10)}`;
+      const taskHtml = isWork
+        ? `<li data-id="${newId}">💼 <strong>Feina:</strong> ${text}</li>`
+        : `<li data-id="${newId}">${text}</li>`;
 
       const rowRegex = new RegExp(`(<tr[^>]*data-day="${day}"[^>]*>.*?<ul class="tasks">)(.*?)(</ul>)`, 's');
       if (updated.match(rowRegex)) {
-        updated = updated.replace(rowRegex, `$1$2${formattedLi}$3`);
-        executionLog.push(`➕ Afegida (${day}): "${clean}"`);
+        updated = updated.replace(rowRegex, `$1$2${taskHtml}$3`);
+        log.push(`➕ Afegida a ${day}: "${text}"`);
       }
-    } else if (act.type === 'move') {
-      const q = (act.query || '').toLowerCase().trim();
-      const targetDate = act.target_date || getMadridDate(1);
-      const all = parseAllTasks(updated);
-      const todayStr = getMadridDate(0);
+    }
 
-      // Filter out tasks already moved or already marked done
-      const candidateTasks = all.filter(t => !t.isMovedAway && !t.isDone);
-      // Prioritize tasks on today's date!
-      const target = candidateTasks.find(t => t.day === todayStr && (t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8)))))
-                  || candidateTasks.find(t => t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8))))
-                  || all.find(t => !t.isMovedAway && (t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8)))));
+    else if (act.type === 'move') {
+      const query = (act.query || '').toLowerCase().trim();
+      const targetDate = act.target_date;
+      if (!query || !targetDate) continue;
 
+      const target = allTasks.find(t => t.text.toLowerCase().includes(query) && t.day !== targetDate);
       if (target) {
-        // Mark as movedaway on source date
-        const srcRegex = new RegExp(`(<li\\s+[^>]*data-id="${target.id}"[^>]*>)(.*?)(</li>)`, 's');
-        if (updated.match(srcRegex)) {
-          updated = updated.replace(srcRegex, (m, openTag, inner, closeTag) => {
-            let tag = openTag;
-            if (tag.includes('class="')) {
-              tag = tag.replace(/class="([^"]*)"/, (cm, cVal) => cVal.includes('movedaway') ? cm : `class="${cVal} movedaway"`);
-            } else {
-              tag = tag.replace('<li', '<li class="movedaway"');
-            }
-            if (!tag.includes('data-to=')) {
-              tag = tag.replace('<li', `<li data-to="${targetDate}"`);
-            }
-            return `${tag}${inner}${closeTag}`;
-          });
-        } else {
-          updated = updated.replace(new RegExp(`\\s*<li\\s+[^>]*data-id="${target.id}"[^>]*>.*?</li>`, 's'), '');
-        }
+        const liRegex = new RegExp(`\\s*<li[^>]*data-id="${target.id}"[^>]*>.*?</li>`, 's');
+        updated = updated.replace(liRegex, '');
 
-        const newId = `${targetDate}-${Date.now().toString().slice(-4)}`;
-        const toRowRegex = new RegExp(`(<tr[^>]*data-day="${targetDate}"[^>]*>.*?<ul class="tasks">)(.*?)(</ul>)`, 's');
-        if (updated.match(toRowRegex)) {
-          let cleanInner = target.raw.replace(/<span\s+class="from">.*?<\/span>\s*/g, '');
-          if (!cleanInner.includes('cal-sync')) {
-            cleanInner += '<span class="cal-sync" style="display:none">⚠️</span>';
-          }
-          updated = updated.replace(toRowRegex, `$1$2<li data-id="${newId}">⏩ de ${target.day}: ${cleanInner}</li>$3`);
-          executionLog.push(`⏩ Moguda a ${targetDate}: "${target.text}"`);
+        const targetRowRegex = new RegExp(`(<tr[^>]*data-day="${targetDate}"[^>]*>.*?<ul class="tasks">)(.*?)(</ul>)`, 's');
+        if (updated.match(targetRowRegex)) {
+          const movedHtml = `<li data-id="${target.id}">${target.raw}</li>`;
+          updated = updated.replace(targetRowRegex, `$1$2${movedHtml}$3`);
+          log.push(`📦 Moguda de ${target.day} a ${targetDate}: "${target.text}"`);
         }
       }
-    } else if (act.type === 'edit') {
-      const q = (act.query || '').toLowerCase().trim();
-      const all = parseAllTasks(updated);
-      const todayStr = getMadridDate(0);
-      const candidates = all.filter(t => !t.isMovedAway);
-      const target = candidates.find(t => t.day === todayStr && (t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8)))))
-                  || candidates.find(t => t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8))));
+    }
+
+    else if (act.type === 'delete') {
+      const query = (act.query || '').toLowerCase().trim();
+      const day = act.day;
+      if (!query) continue;
+
+      const target = allTasks.find(t => {
+        const matchText = t.text.toLowerCase().includes(query);
+        return day ? (matchText && t.day === day) : matchText;
+      });
 
       if (target) {
-        const liMatch = updated.match(new RegExp(`(<li\\s+data-id="${target.id}"[^>]*>)(.*?)(</li>)`, 's'));
-        if (liMatch) {
-          let formatted = act.text || target.raw;
-          if (act.is_urgent && !formatted.includes('⚠️')) {
-            formatted = `⚠️ <strong>${formatted.replace(/<\/?strong>/g, '').replace(/^⚠️\s*/, '')}</strong>`;
-          } else if (act.is_bold && !formatted.includes('<strong>')) {
-            formatted = `<strong>${formatted}</strong>`;
-          }
-          if (!formatted.includes('cal-sync')) {
-            formatted += '<span class="cal-sync" style="display:none">⚠️</span>';
-          }
-          updated = updated.replace(new RegExp(`(<li\\s+data-id="${target.id}"[^>]*>)(.*?)(</li>)`, 's'), `$1${formatted}$3`);
-          executionLog.push(`✏️ Modificada (${target.day}): "${target.text}" → "${formatted.replace(/<[^>]+>/g, '')}"`);
-        }
+        const liRegex = new RegExp(`\\s*<li[^>]*data-id="${target.id}"[^>]*>.*?</li>`, 's');
+        updated = updated.replace(liRegex, '');
+        log.push(`🗑️ Eliminada de ${target.day}: "${target.text}"`);
       }
     }
   }
 
-  return { updatedContent: updated, log: executionLog };
+  return { updatedContent: updated, log };
 }
 
-// 🧠 Motor Gemini amb suport per a accions múltiples i cascada de models
-async function callGemini(userMessage, todayDate, todayTasks, upcomingSchedule) {
+async function callGeminiTelegram(userMessage, todayStr, upcomingSchedule) {
   if (!GEMINI_API_KEY) return null;
 
-  const scheduleContext = Array.isArray(upcomingSchedule) ? upcomingSchedule.map(d => {
-    const taskDetails = d.tasks.length > 0
-      ? d.tasks.map(t => `${t.isDone ? '[FET] ' : ''}${t.text}`).join(' · ')
-      : '(Cap tasca programada / lliure)';
-    return `📅 ${d.day} [${d.pendingCount} pendents]: ${taskDetails}`;
-  }).join('\n') : '';
+  const systemPrompt = `Ets el secretari d'estudi i assistent de productivitat personal a Telegram. Parles amb l'estudiant amb to natural, proper, engrescador i eficient.
 
-  const systemPrompt = `Ets el secretari personal i company d'estudi intel·ligent de l'estudiant.
-Tens la intel·ligència, calidesa, sentit comú i to humà del Gemini de debò. Parlaràs SEMPRE en CATALÀ.
+DATA ACTUAL: Avui és ${todayStr} (hora de Madrid).
 
-Context de l'estudiant:
-- Universitat: UPC · FIB (Enginyeria Informàtica). Assignatures claus: PAR, IDI, BD, ER, SIO.
-- Horaris de classe, feina i dates d'entrega.
-- Filosofia: MAI modifiquis res sense demanar confirmació. Formula clarament el resum de les accions.
+AGENDA EN DIRECTE:
+${upcomingSchedule}
 
-Data d'avui: ${todayDate}. Demà: ${getMadridDate(1)}.
+ACCIONS:
+Pots proposar canvis:
+- add: afegir -> { "type": "add", "day": "YYYY-MM-DD", "text": "...", "is_work": true|false }
+- move: moure -> { "type": "move", "query": "text identificatiu", "target_date": "YYYY-MM-DD" }
+- delete: esborrar -> { "type": "delete", "query": "text identificatiu", "day": "YYYY-MM-DD" }
 
-Tasques d'avui (${todayDate}):
-${todayTasks.length > 0 ? todayTasks.map(t => `- [${t.done ? 'X' : ' '}] ${t.text}`).join('\n') : '(Cap)'}
-
-AGENDA I CÀRREGA DE FEINA DELS PROPERS 14 DIES:
-${scheduleContext}
-
-Instruccions de funcionament:
-1. 💡 BUSCADOR DE FORATS I ASSESSOR D'HORARIS:
-   Si l'estudiant pregunta coses com:
-   - "Quan creus que hauria de fer X?"
-   - "Quins dies tinc més forats per fer X o estudiar?"
-   - "Quan em poses X tasca?"
-   -> Analitza minuciosament la càrrega dels propers 14 dies (quants pendents té cada dia).
-   -> Troba els dies amb menys tasques pendents o vespres més relaxats.
-   -> Recomana-li amb claredat, empatia i precisió quins són els millors 2 o 3 moments, i proposa-li programar-la ("Vols que t'ho apunti per al dia X?").
-
-2. ⚡ PROPOSTA D'ACCIONS (afegir, esborrar, moure, reprogramar, modificar/marcar urgent):
-   REGISTRE D'ACCIONS OBLIGATORI:
-   Si l'estudiant demana fer canvis (ex: "demà no quedaré per fer SIO sinó trucada a les 18:30", "esborra lo de quedar per fer sio tant dijous com divendres", "afegeix trucada a les 18:30", "posa en negreta l'entrega d'ER"):
-   ÉS TOTALMENT PROHIBIT RETORNAR intent: "chat"!
-   HAS DE RETORNAR SEMPRE EXCLUSIVAMENT:
-   intent: "propose_actions"
-   actions: array d'objectes concrets:
-     - Per afegir: { "type": "add", "day": "YYYY-MM-DD", "text": "...", "is_work": false/true, "is_urgent": false/true }
-     - Per esborrar: { "type": "delete", "day": "YYYY-MM-DD o null", "query": "paraules clau" }
-     - Per moure: { "type": "move", "query": "...", "target_date": "YYYY-MM-DD" }
-     - Per modificar/urgent: { "type": "edit", "query": "...", "text": "...", "is_urgent": true }
-   summary: resum breu en una frase dels canvis proposats.
-   reply: missatge clar demanant confirmació.
-   El backend enviarà botons de confirmació interactius i guardarà l'acció per executar-la. SI RETORNES "chat", EL SISTEMA NO PODRÀ PROCESSAR ELS CANVIS!
-
-3. Si demana la seva agenda ("què tinc demà?", "què tinc el 23/11?"):
-   intent: "show_schedule", target_date: "YYYY-MM-DD".
-
-4. Si és pura conversa informal, ànims o reflexions sense cap canvi de calendari ("hola caracola", "com estas", "estic cansada"):
-   intent: "chat", reply: el teu missatge empàtic i encoratjador.
-
-Retorna SEMPRE exclusivament el següent JSON vàlid:
+FORMAT DE SORTIDA:
+Respon SEMPRE amb un JSON:
 {
-  "intent": "propose_actions" | "show_schedule" | "chat",
+  "reply": "Missatge explicatiu en català (o en la llengua de l'usuari)",
+  "has_actions": true|false,
   "actions": [ ... ],
-  "summary": "Resum breu de les accions o null",
-  "target_date": "YYYY-MM-DD o null",
-  "reply": "Missatge per a l'estudiant en català"
+  "summary": "Resum breu dels canvis per al botó de confirmació"
 }`;
 
-  const models = ['gemini-flash-lite-latest', 'gemini-3-flash-preview', 'gemini-pro-latest'];
+  const models = ['gemini-2.5-flash', 'gemini-3-flash-preview', 'gemini-flash-lite-latest', 'gemini-pro-latest'];
 
   for (const model of models) {
     try {
@@ -409,20 +294,19 @@ Retorna SEMPRE exclusivament el següent JSON vàlid:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: userMessage }] }],
+          contents: [{ role: 'user', parts: [{ text: userMessage }] }],
           system_instruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: { response_mime_type: 'application/json' }
+          generationConfig: { responseMimeType: 'application/json' }
         })
       });
+
       if (res.ok) {
         const json = await res.json();
         const txt = json.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (txt) {
-          return JSON.parse(txt);
-        }
+        if (txt) return JSON.parse(txt);
       }
     } catch (e) {
-      console.warn(`Model ${model} failed, trying next:`, e.message);
+      console.warn(`Telegram model ${model} failed:`, e.message);
     }
   }
   return null;
@@ -430,250 +314,98 @@ Retorna SEMPRE exclusivament el següent JSON vàlid:
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
-    return res.status(200).json({ ok: true, message: 'Planning Bot Webhook actiu (Gemini Conversacional & Confirmació Interactiva)' });
+    return res.status(200).send('Telegram Bot Webhook is live');
   }
 
-  // =========================================================================
-  // 1. GESTIÓ DE BOTONS INTERACTIUS (CALLBACK QUERY)
-  // =========================================================================
-  if (req.body && req.body.callback_query) {
-    const cb = req.body.callback_query;
-    const cbId = cb.id;
-    const chatId = String(cb.message.chat.id);
-    const messageId = cb.message.message_id;
-    const data = cb.data;
-    const msgText = cb.message.text || '';
+  try {
+    const update = req.body;
+    if (!update) return res.status(200).send('No update');
 
-    if (chatId !== String(AUTH_CHAT_ID)) {
-      await answerCallbackQuery(cbId, "No autoritzat");
+    // Handle Callback Query (Buttons)
+    if (update.callback_query) {
+      const cb = update.callback_query;
+      const data = cb.data;
+      const chatId = cb.message?.chat?.id;
+      const messageId = cb.message?.message_id;
+
+      if (data === 'cancel_change') {
+        await answerCallbackQuery(cb.id, 'Cancel·lat');
+        await editTelegramMessage(chatId, messageId, '❌ **Acció cancel·lada.** Cap canvi aplicat al teu planning.');
+        return res.status(200).send('Cancelled');
+      }
+
+      if (data.startsWith('confirm_change:')) {
+        await answerCallbackQuery(cb.id, 'Aplicant...');
+        const changeId = data.replace('confirm_change:', '');
+
+        const { content, sha } = await getGitHubFile();
+        const state = getState(content);
+
+        if (state.pending && state.pending.id === changeId) {
+          const { updatedContent, log } = executeActionBatch(content, state.pending.actions);
+          delete state.pending;
+          const finalHtml = updateState(updatedContent, state);
+
+          await saveGitHubFile(finalHtml, sha, 'Telegram Bot: aplicar canvis confirmats');
+          const logMsg = log.length > 0 ? '\n\n' + log.join('\n') : '';
+          await editTelegramMessage(chatId, messageId, `✅ **Canvis aplicats correctament al teu planning!**${logMsg}`);
+        } else {
+          await editTelegramMessage(chatId, messageId, '⚠️ Aquest canvi ja ha caducat o ja s\'havia aplicat anteriorment.');
+        }
+        return res.status(200).send('Confirmed');
+      }
+    }
+
+    // Handle incoming text message
+    const msg = update.message;
+    if (!msg || !msg.text) return res.status(200).send('No message text');
+
+    const chatId = msg.chat.id;
+    const text = msg.text.trim();
+
+    if (String(chatId) !== String(CHAT_ID)) {
+      await sendTelegram(chatId, "⚠️ Aquest és un bot privat d'assistència d'estudi.");
       return res.status(200).send('Unauthorized');
     }
 
-    try {
-      // Cancel·lar acció pendent
-      if (data === 'cancel' || data === 'cancel_pending') {
-        const { content, sha } = await getGitHubFile();
-        const state = getState(content);
-        delete state.pending;
-        const cleaned = updateState(content, state);
-        await saveGitHubFile(cleaned, sha, "Planning Bot: cancel·lar acció pendent");
-        await answerCallbackQuery(cbId, "Cancel·lat");
-        await editTelegramMessage(chatId, messageId, "❌ D'acord, acció cancel·lada. No he tocat res al teu planning.");
-        return res.status(200).send('OK');
-      }
-
-      // Confirmar accions múltiples / pendents
-      if (data === 'confirm_pending') {
-        const { content, sha } = await getGitHubFile();
-        const state = getState(content);
-
-        if (!state.pending || !Array.isArray(state.pending.actions) || state.pending.actions.length === 0) {
-          await answerCallbackQuery(cbId, "No hi ha accions pendents");
-          await editTelegramMessage(chatId, messageId, "⚠️ No he trobat cap canvi pendent per aplicar o ja s'havia processat.");
-          return res.status(200).send('OK');
-        }
-
-        const { updatedContent, log } = executeActionBatch(content, state.pending.actions);
-        const updatedState = getState(updatedContent);
-        delete updatedState.pending;
-        const finalHtml = updateState(updatedContent, updatedState);
-
-        await saveGitHubFile(finalHtml, sha, `Planning Bot: aplicar canvis confirmats`);
-        await answerCallbackQuery(cbId, "Canvis aplicats!");
-
-        const logMsg = log.length > 0 ? `\n\n${log.join('\n')}` : '';
-        await editTelegramMessage(chatId, messageId, `✅ **Perfecte, canvis confirmats i guardats al planning!**${logMsg}`);
-        return res.status(200).send('OK');
-      }
-
-      // Legacy fallback: confirm_add
-      if (data === 'confirm_add') {
-        const dayMatch = msgText.match(/📅 Dia:\s*(\d{4}-\d{2}-\d{2})/);
-        const workMatch = msgText.match(/💼 Feina:\s*(Sí|No)/i);
-        const taskMatch = msgText.match(/📝 Tasca:\s*([^\n]+)/);
-
-        if (!dayMatch || !taskMatch) {
-          await answerCallbackQuery(cbId, "Error en les dades");
-          await editTelegramMessage(chatId, messageId, "⚠️ No he pogut recuperar les dades de la tasca per afegir-la.");
-          return res.status(200).send('OK');
-        }
-
-        const targetDate = dayMatch[1];
-        const isWork = workMatch ? workMatch[1].toLowerCase() === 'sí' : false;
-        const taskText = cleanTaskTitle(taskMatch[1]);
-        const { content, sha } = await getGitHubFile();
-
-        const { updatedContent } = executeActionBatch(content, [{ type: 'add', day: targetDate, text: taskText, is_work: isWork }]);
-        const state = getState(updatedContent);
-        delete state.pending;
-        const finalHtml = updateState(updatedContent, state);
-
-        await saveGitHubFile(finalHtml, sha, `Planning Bot: afegir tasca (${targetDate})`);
-        await answerCallbackQuery(cbId, "Tasca afegida!");
-        await editTelegramMessage(chatId, messageId, `✅ **Tasca confirmada i afegida al teu planning!**\n\n📅 *${targetDate}* · ${isWork ? '💼 Feina' : '🎓 Universitat'}\n📝 *${taskText}*`);
-        return res.status(200).send('OK');
-      }
-
-      // Legacy fallback: confirm_del:id
-      if (data.startsWith('confirm_del:')) {
-        const taskId = data.slice(12);
-        const { content, sha } = await getGitHubFile();
-        const liRegex = new RegExp(`\\s*<li[^>]*data-id="${taskId}"[^>]*>.*?</li>`, 's');
-
-        if (content.match(liRegex)) {
-          let updated = content.replace(liRegex, '');
-          const state = getState(updated);
-          delete state.pending;
-          const finalHtml = updateState(updated, state);
-
-          await saveGitHubFile(finalHtml, sha, `Planning Bot: esborrar tasca ${taskId}`);
-          await answerCallbackQuery(cbId, "Tasca esborrada!");
-          await editTelegramMessage(chatId, messageId, "🗑️ **Tasca eliminada correctament del planning.**");
-        } else {
-          await answerCallbackQuery(cbId, "Tasca no trobada");
-          await editTelegramMessage(chatId, messageId, "⚠️ Aquesta tasca ja no era al teu planning.");
-        }
-        return res.status(200).send('OK');
-      }
-
-    } catch (err) {
-      console.error('Callback error:', err);
-      await answerCallbackQuery(cbId, "Error processant acció");
-      return res.status(200).send('Error');
-    }
-  }
-
-  // =========================================================================
-  // 2. GESTIÓ DE MISSATGES DE TEXT DE L'USUARI
-  // =========================================================================
-  const { message } = req.body || {};
-  if (!message) {
-    return res.status(200).send('OK');
-  }
-
-  const chatId = String(message.chat.id);
-  if (chatId !== String(AUTH_CHAT_ID)) {
-    await sendTelegram(chatId, "⚠️ Aquest és el bot privat de planificació.");
-    return res.status(200).send('Unauthorized');
-  }
-
-  if (message.voice) {
-    await sendTelegram(chatId, "🎙️ He rebut la teva nota de veu, ! Pots fer servir el botó de dictat per veu del teu teclat mòbil i t'entendré a la perfecció.");
-    return res.status(200).send('OK');
-  }
-
-  if (!message.text) {
-    return res.status(200).send('OK');
-  }
-
-  const rawText = message.text.trim();
-  const lower = rawText.toLowerCase();
-
-  try {
     const todayStr = getMadridDate(0);
-    const tomorrowStr = getMadridDate(1);
     const { content, sha } = await getGitHubFile();
-    const state = getState(content);
+    const upcomingSchedule = getUpcomingScheduleOverview(content, todayStr, 30);
 
-    // 🎯 COMPROVACIÓ PRIORITÀRIA: SI L'USUARI DIU "SÍ" / "VAL" / "FES-HO" I HI HA UNA ACCIÓ PENDENT
-    const isAffirmative = /^(s[ií]|val|d'?acord|fes[- ]?ho|endavant|confirmo|perfecte|ok|aplica[- ]?ho)$/i.test(lower);
-    const isNegative = /^(no|cancela|cancel·la|deixa[- ]?ho)$/i.test(lower);
+    const result = await callGeminiTelegram(text, todayStr, upcomingSchedule);
 
-    if (state.pending && isAffirmative) {
-      const actions = state.pending.actions || [];
-      if (actions.length > 0) {
-        const { updatedContent, log } = executeActionBatch(content, actions);
-        const updatedState = getState(updatedContent);
-        delete updatedState.pending;
-        const finalHtml = updateState(updatedContent, updatedState);
-
-        await saveGitHubFile(finalHtml, sha, "Planning Bot: aplicar canvis confirmats per text");
-        const logMsg = log.length > 0 ? `\n\n${log.join('\n')}` : '';
-        await sendTelegram(chatId, `✅ **Fet, ! He aplicat els canvis al teu planning:**${logMsg}`);
-        return res.status(200).send('OK');
-      }
+    if (!result) {
+      await sendTelegram(chatId, "Hola! He tingut un petit tall de connexió. Em pots repetir què necessites?");
+      return res.status(200).send('Gemini error');
     }
 
-    if (!state.pending && isAffirmative) {
-      await sendTelegram(chatId, "💡 No hi ha cap canvi pendent per confirmar en aquest moment, ! Els canvis anteriors (com la trucada de SIO a les 18:30h) ja estan registrats al teu planning. Si vols canviar o afegir alguna altra cosa, demana-m'ho directament!");
-      return res.status(200).send('OK');
-    }
+    if (result.has_actions && result.actions && result.actions.length > 0) {
+      const changeId = Date.now().toString(36);
+      const state = getState(content);
+      state.pending = { id: changeId, actions: result.actions, timestamp: Date.now() };
+      const updatedWithPending = updateState(content, state);
 
-    if (state.pending && isNegative) {
-      delete state.pending;
-      const finalHtml = updateState(content, state);
-      await saveGitHubFile(finalHtml, sha, "Planning Bot: acció cancel·lada per text");
-      await sendTelegram(chatId, "❌ D'acord, no he modificat res al teu planning.");
-      return res.status(200).send('OK');
-    }
+      await saveGitHubFile(updatedWithPending, sha, 'Telegram: canvis pendents de confirmació');
 
-    const todayTasks = parseTasksForDate(content, todayStr);
-    const upcomingSchedule = getUpcomingScheduleOverview(content, todayStr, 14);
-
-    // 🚀 Motor Conversacional Gemini (amb buscador de forats i accions múltiples)
-    const nlu = await callGemini(rawText, todayStr, todayTasks, upcomingSchedule);
-
-    if (nlu) {
-      // 1. Proposta d'accions (afegir, esborrar, moure o batch)
-      const actions = Array.isArray(nlu.actions) && nlu.actions.length > 0
-        ? nlu.actions
-        : (nlu.intent === 'propose_add' && (nlu.task_text || rawText)
-            ? [{ type: 'add', day: nlu.target_date || resolveTargetDate(rawText).date, text: cleanTaskTitle(nlu.task_text || rawText), is_work: Boolean(nlu.is_work) }]
-            : (nlu.intent === 'propose_delete' && (nlu.task_query || rawText)
-                ? [{ type: 'delete', day: nlu.target_date, query: nlu.task_query || rawText }]
-                : []));
-
-      if (actions.length > 0 || nlu.intent === 'propose_actions') {
-        const summary = nlu.summary || actions.map(a => `${a.type === 'delete' ? '🗑️ Esborrar' : a.type === 'add' ? '➕ Afegir' : '⏩ Moure'} (${a.day || 'dia'}): ${a.text || a.query}`).join('\n');
-
-        // Guardem l'acció a l'estat per poder-la executar tant per botó com responent "sí"
-        state.pending = { actions, summary, created_at: Date.now() };
-        const updatedHtmlWithPending = updateState(content, state);
-        await saveGitHubFile(updatedHtmlWithPending, sha, "Planning Bot: registrar acció pendent de confirmació");
-
-        const promptText = `${nlu.reply || "He preparat els canvis. Em confirmes que vols que els apliqui?"}\n\n` +
-                           `📋 *Resum dels canvis:*\n${summary}`;
-
-        const inlineKeyboard = {
-          inline_keyboard: [
-            [
-              { text: "✅ Sí, fes els canvis", callback_data: "confirm_pending" },
-              { text: "❌ Cancel·la", callback_data: "cancel_pending" }
-            ]
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [
+            { text: '✅ Confirmar', callback_data: `confirm_change:${changeId}` },
+            { text: '❌ Cancel·lar', callback_data: 'cancel_change' }
           ]
-        };
+        ]
+      };
 
-        await sendTelegram(chatId, promptText, inlineKeyboard);
-        return res.status(200).send('OK');
-      }
-
-      // 2. Mostrar agenda (lectura, no requereix confirmació)
-      if (nlu.intent === 'show_schedule' || (!nlu.task_text && nlu.target_date && nlu.intent !== 'chat')) {
-        const reqDate = nlu.target_date || todayStr;
-        const tasks = parseTasksForDate(content, reqDate);
-        if (tasks.length === 0) {
-          await sendTelegram(chatId, `📅 No hi ha cap tasca programada per al dia *${reqDate}*.\n\n${nlu.reply || "Vols que n'apuntem alguna?"}`);
-        } else {
-          const list = tasks.map((t, i) => `${t.done ? '✅' : '▫️'} *${i + 1}.* ${t.text}`).join('\n\n');
-          await sendTelegram(chatId, `📅 *Agenda de ${reqDate}:*\n\n${list}\n\n${nlu.reply || ''}`);
-        }
-        return res.status(200).send('OK');
-      }
-
-      // 3. Xat conversacional / consells / reflexions (com Gemini normal)
-      if (nlu.reply) {
-        await sendTelegram(chatId, nlu.reply);
-        return res.status(200).send('OK');
-      }
+      const msgText = `${result.reply}\n\n⚠️ *Vols que apliqui aquests canvis al teu planning?*\n${result.summary ? '_' + result.summary + '_' : ''}`;
+      await sendTelegram(chatId, msgText, inlineKeyboard);
+    } else {
+      await sendTelegram(chatId, result.reply);
     }
 
-    // --- Fallback amigable si cap model respon ---
-    await sendTelegram(chatId, "Hola ! He tingut un petit tall de connexió. Em pots repetir què necessites? Soc aquí per ajudar-te amb qualsevol tasca o consulta de la teva agenda!");
-    return res.status(200).send('OK');
+    return res.status(200).send('Processed');
 
   } catch (err) {
-    console.error('Webhook error:', err);
-    await sendTelegram(chatId, `⚠️ Error processant la petició: ${err.message}`);
+    console.error('Telegram bot error:', err);
     return res.status(200).send('Error');
   }
 };
