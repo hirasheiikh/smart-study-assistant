@@ -1,7 +1,8 @@
-﻿const GH_TOKEN = process.env.GH_TOKEN;
-const REPO = 'hirasheiikh/planning-finals';
+const GH_TOKEN = process.env.GH_TOKEN;
+const REPO = process.env.GH_REPO || 'hirasheiikh/smart-study-assistant';
 
 function decodeEntities(str) {
+  if (!str) return '';
   return str.replace(/&#(\d+);/g, (m, dec) => String.fromCharCode(dec))
             .replace(/&quot;/g, '"')
             .replace(/&amp;/g, '&')
@@ -15,7 +16,7 @@ async function getPlanningHtml() {
     headers: {
       'Authorization': `Bearer ${GH_TOKEN}`,
       'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'PlanningCalendar'
+      'User-Agent': 'SmartStudyCalendar'
     }
   });
   if (!res.ok) throw new Error(`GitHub get failed: ${res.status}`);
@@ -23,247 +24,173 @@ async function getPlanningHtml() {
   return Buffer.from(data.content, 'base64').toString('utf8');
 }
 
-function formatIcsDate(date, isAllDay = false) {
-  const pad = n => String(n).padStart(2, '0');
-  const y = date.getUTCFullYear();
-  const m = pad(date.getUTCMonth() + 1);
-  const d = pad(date.getUTCDate());
-  if (isAllDay) return `${y}${m}${d}`;
-  const h = pad(date.getUTCHours());
-  const min = pad(date.getUTCMinutes());
-  const s = pad(date.getUTCSeconds());
-  return `${y}${m}${d}T${h}${min}${s}Z`;
+function parseTimeRange(timeStr) {
+  const m1 = timeStr.match(/(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})/);
+  if (m1) {
+    return {
+      startH: parseInt(m1[1], 10),
+      startM: parseInt(m1[2], 10),
+      endH: parseInt(m1[3], 10),
+      endM: parseInt(m1[4], 10)
+    };
+  }
+  const m2 = timeStr.match(/(\d{1,2}):(\d{2})\s*(?:h|H)?/);
+  if (m2) {
+    const sh = parseInt(m2[1], 10);
+    const sm = parseInt(m2[2], 10);
+    return {
+      startH: sh,
+      startM: sm,
+      endH: (sh + 1) % 24,
+      endM: sm
+    };
+  }
+  return null;
 }
 
-function parseIcsEvents(html) {
-  const events = [];
+function formatIcsDateTime(dateStr, hour, minute) {
+  const y = dateStr.slice(0, 4);
+  const m = dateStr.slice(5, 7);
+  const d = dateStr.slice(8, 10);
+  const hh = String(hour).padStart(2, '0');
+  const mm = String(minute).padStart(2, '0');
+  return `${y}${m}${d}T${hh}${mm}00`;
+}
 
-  // 1. Calendari clau
-  const calClauMatch = html.match(/<h3 id="calendari-clau"[^>]*>.*?<\/h3>.*?<table>.*?<tbody>(.*?)<\/tbody>/s);
-  if (calClauMatch) {
-    const rowsHtml = calClauMatch[1];
-    const rowRegex = /<tr[^>]*>\s*<td>(.*?)<\/td>\s*<td>(.*?)<\/td>\s*<\/tr>/gs;
-    let m;
-    while ((m = rowRegex.exec(rowsHtml)) !== null) {
-      const dateRaw = decodeEntities(m[1].replace(/<[^>]+>/g, '').trim());
-      const descRaw = decodeEntities(m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+function formatIcsDate(dateStr) {
+  return dateStr.replace(/-/g, '');
+}
 
-      if (dateRaw.includes('?') || dateRaw.startsWith('Cada')) continue;
+function escapeIcsText(str) {
+  if (!str) return '';
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
+}
 
-      let year = 2026;
-      if (dateRaw.includes('/01') || dateRaw.includes('/02')) year = 2027;
-
-      const dateMatch = dateRaw.match(/(\d{1,2})\/(\d{1,2})/);
-      if (!dateMatch) continue;
-
-      const day = parseInt(dateMatch[1], 10);
-      const month = parseInt(dateMatch[2], 10);
-
-      // Check hours (e.g. 9–11 h, 15–18 h, 12:00)
-      const hourRangeMatch = dateRaw.match(/(\d{1,2})[–-](\d{1,2})\s*h/);
-      const exactHourMatch = dateRaw.match(/(\d{1,2}):(\d{2})/);
-
-      if (hourRangeMatch) {
-        const sh = parseInt(hourRangeMatch[1], 10);
-        const eh = parseInt(hourRangeMatch[2], 10);
-        // CET is UTC+1
-        const start = new Date(Date.UTC(year, month - 1, day, sh - 1, 0, 0));
-        const end = new Date(Date.UTC(year, month - 1, day, eh - 1, 0, 0));
-        events.push({
-          uid: `key-${year}-${month}-${day}-${sh}@planning-finals`,
-          summary: descRaw.split('→')[0].split('⚠️')[0].trim(),
-          description: descRaw,
-          start,
-          end,
-          isAllDay: false
-        });
-      } else if (exactHourMatch) {
-        const sh = parseInt(exactHourMatch[1], 10);
-        const smin = parseInt(exactHourMatch[2], 10);
-        const start = new Date(Date.UTC(year, month - 1, day, sh - 1, smin, 0));
-        const end = new Date(Date.UTC(year, month - 1, day, sh, smin, 0));
-        events.push({
-          uid: `key-${year}-${month}-${day}-${sh}-${smin}@planning-finals`,
-          summary: descRaw.split('→')[0].split('⚠️')[0].trim(),
-          description: descRaw,
-          start,
-          end,
-          isAllDay: false
-        });
-      } else {
-        // All-day
-        const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-        const end = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0));
-        events.push({
-          uid: `key-${year}-${month}-${day}-allday@planning-finals`,
-          summary: descRaw.split('→')[0].trim(),
-          description: descRaw,
-          start,
-          end,
-          isAllDay: true
-        });
-      }
-    }
+function foldLine(line) {
+  const max = 75;
+  if (line.length <= max) return line;
+  const parts = [];
+  parts.push(line.slice(0, max));
+  let i = max;
+  while (i < line.length) {
+    parts.push(' ' + line.slice(i, i + max - 1));
+    i += max - 1;
   }
-
-  // 2. Daily tasks (calls, deliveries, meetings, labs, timed events)
-  const dayRowRegex = /<tr[^>]*data-day="([^"]+)"[^>]*>([\s\S]*?)<\/tr>/g;
-  let dm;
-  while ((dm = dayRowRegex.exec(html)) !== null) {
-    const dayIso = dm[1]; // YYYY-MM-DD
-    const rowHtml = dm[2];
-    const parts = dayIso.split('-').map(Number);
-    const [year, month, day] = parts;
-
-    const tasksMatch = rowHtml.match(/<ul class="tasks">([\s\S]*?)<\/ul>/);
-    if (!tasksMatch) continue;
-
-    const liRegex = /<li([^>]*)>([\s\S]*?)<\/li>/gs;
-    let li;
-    while ((li = liRegex.exec(tasksMatch[1])) !== null) {
-      const attrs = li[1];
-      if (attrs.includes('movedaway')) continue;
-
-      const inner = decodeEntities(li[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
-      if (!inner) continue;
-
-      const idMatch = attrs.match(/data-id="([^"]+)"/);
-      const taskId = idMatch ? idMatch[1] : `${dayIso}-${inner.slice(0, 15).replace(/[^a-zA-Z0-9]/g, '')}`;
-
-      // 1. Check for exact time e.g. "a les 18:30h", "18:30h", "18:30", "14:00"
-      const exactTimeMatch = inner.match(/(?:a\s+les\s+)?(\b\d{1,2})[:.](\d{2})\s*h?\b/i);
-      // 2. Check for time ranges e.g. "8–10 lab", "16:30–17:30"
-      const rangeTimeMatch = inner.match(/\b(\d{1,2})(?::(\d{2}))?[–-](\d{1,2})(?::(\d{2}))?\s*h?\b/);
-      // 3. Check for single hour like "15 h:"
-      const singleHourMatch = inner.match(/\b(\d{1,2})\s*h(?:\s*:|\s+informe|\b)/i);
-
-      const isImportant = inner.includes('📞') || inner.includes('⚠️') || inner.includes('🚨') ||
-                          /trucada|reuni[oó]|examen|entrega|parcial|revisi[oó]|deadline|lab\b|sio\b/i.test(inner);
-
-      if (exactTimeMatch) {
-        const sh = parseInt(exactTimeMatch[1], 10);
-        const smin = parseInt(exactTimeMatch[2], 10);
-        if (sh >= 6 && sh <= 23) {
-          // CET is UTC+1
-          const start = new Date(Date.UTC(year, month - 1, day, sh - 1, smin, 0));
-          const end = new Date(Date.UTC(year, month - 1, day, sh - 1, smin + 45, 0));
-          const uid = `task-${taskId}@planning-finals`;
-          if (!events.some(e => e.uid === uid)) {
-            events.push({
-              uid,
-              summary: inner,
-              description: inner,
-              start, end, isAllDay: false
-            });
-          }
-          continue;
-        }
-      }
-
-      if (rangeTimeMatch && !inner.toLowerCase().includes('pag.') && !inner.toLowerCase().includes('pàg.')) {
-        const sh = parseInt(rangeTimeMatch[1], 10);
-        const smin = rangeTimeMatch[2] ? parseInt(rangeTimeMatch[2], 10) : 0;
-        const eh = parseInt(rangeTimeMatch[3], 10);
-        const emin = rangeTimeMatch[4] ? parseInt(rangeTimeMatch[4], 10) : 0;
-        if (sh >= 6 && eh <= 23 && eh >= sh) {
-          const start = new Date(Date.UTC(year, month - 1, day, sh - 1, smin, 0));
-          const end = new Date(Date.UTC(year, month - 1, day, eh - 1, emin, 0));
-          const uid = `task-${taskId}@planning-finals`;
-          if (!events.some(e => e.uid === uid)) {
-            events.push({
-              uid,
-              summary: inner,
-              description: inner,
-              start, end, isAllDay: false
-            });
-          }
-          continue;
-        }
-      }
-
-      if (singleHourMatch) {
-        const sh = parseInt(singleHourMatch[1], 10);
-        if (sh >= 7 && sh <= 22) {
-          const start = new Date(Date.UTC(year, month - 1, day, sh - 1, 0, 0));
-          const end = new Date(Date.UTC(year, month - 1, day, sh, 0, 0));
-          const uid = `task-${taskId}@planning-finals`;
-          if (!events.some(e => e.uid === uid)) {
-            events.push({
-              uid,
-              summary: inner,
-              description: inner,
-              start, end, isAllDay: false
-            });
-          }
-          continue;
-        }
-      }
-
-      if (isImportant) {
-        const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-        const end = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0));
-        const uid = `task-${taskId}@planning-finals`;
-        if (!events.some(e => e.uid === uid)) {
-          events.push({
-            uid,
-            summary: inner,
-            description: inner,
-            start, end, isAllDay: true
-          });
-        }
-      }
-    }
-  }
-
-  return events;
+  return parts.join('\r\n');
 }
 
 module.exports = async (req, res) => {
   try {
     const html = await getPlanningHtml();
-    const events = parseIcsEvents(html);
 
-    const nowStr = formatIcsDate(new Date());
+    let doneSet = new Set();
+    const stateMatch = html.match(/<script id="state"[^>]*>(.*?)<\/script>/s);
+    if (stateMatch) {
+      try {
+        const state = JSON.parse(stateMatch[1]);
+        (state.done || []).forEach(d => doneSet.add(d));
+      } catch (e) {}
+    }
+
+    const events = [];
+    const nowIso = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+    const rowRegex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>.*?<td>(.*?)<\/td>.*?<td><ul class="tasks">(.*?)<\/ul><\/td>.*?<\/tr>/gs;
+    let rowMatch;
+
+    while ((rowMatch = rowRegex.exec(html)) !== null) {
+      const day = rowMatch[1];
+      const dayLabel = rowMatch[2].replace(/<[^>]+>/g, '').trim();
+      const tasksHtml = rowMatch[3];
+
+      const liRegex = /<li([^>]*)>(.*?)<\/li>/gs;
+      let liMatch;
+
+      while ((liMatch = liRegex.exec(tasksHtml)) !== null) {
+        const attrs = liMatch[1];
+        const rawContent = liMatch[2];
+        const idMatch = attrs.match(/data-id="([^"]+)"/);
+        const taskId = idMatch ? idMatch[1] : '';
+        const isNote = attrs.includes('note');
+        const isMovedAway = attrs.includes('movedaway');
+
+        if (isMovedAway || !taskId) continue;
+
+        const isDone = doneSet.has(taskId);
+        const cleanText = decodeEntities(rawContent.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+        const timeRange = parseTimeRange(cleanText);
+
+        const summaryPrefix = isDone ? '✅ ' : '▫️ ';
+        const summary = escapeIcsText(summaryPrefix + cleanText);
+        const description = escapeIcsText(`Pla d'estudi · ${dayLabel} (${day})\nEstat: ${isDone ? 'Completat' : 'Pendent'}\nID Tasca: ${taskId}`);
+        const uid = `task-${taskId}@smart-study-assistant`;
+
+        if (timeRange) {
+          const dtStart = formatIcsDateTime(day, timeRange.startH, timeRange.startM);
+          const dtEnd = formatIcsDateTime(day, timeRange.endH, timeRange.endM);
+
+          events.push([
+            'BEGIN:VEVENT',
+            `UID:${uid}`,
+            `DTSTAMP:${nowIso}`,
+            `DTSTART;TZID=Europe/Madrid:${dtStart}`,
+            `DTEND;TZID=Europe/Madrid:${dtEnd}`,
+            `SUMMARY:${summary}`,
+            `DESCRIPTION:${description}`,
+            `STATUS:${isDone ? 'CONFIRMED' : 'TENTATIVE'}`,
+            'END:VEVENT'
+          ]);
+        } else {
+          const dtDate = formatIcsDate(day);
+          const nextDayDt = new Date(day + 'T12:00:00Z');
+          nextDayDt.setDate(nextDayDt.getDate() + 1);
+          const nextDayStr = formatIcsDate(nextDayDt.toISOString().slice(0, 10));
+
+          events.push([
+            'BEGIN:VEVENT',
+            `UID:${uid}`,
+            `DTSTAMP:${nowIso}`,
+            `DTSTART;VALUE=DATE:${dtDate}`,
+            `DTEND;VALUE=DATE:${nextDayStr}`,
+            `SUMMARY:${summary}`,
+            `DESCRIPTION:${description}`,
+            `STATUS:${isDone ? 'CONFIRMED' : 'TENTATIVE'}`,
+            'END:VEVENT'
+          ]);
+        }
+      }
+    }
+
     const lines = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Hira Sheikh//Planning Finals Q1//CA',
+      'PRODID:-//Smart Study Assistant//Universal Study Planner//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
-      'X-WR-CALNAME:Planning Finals Q1',
+      'X-WR-CALNAME:Smart Study Planner',
       'X-WR-TIMEZONE:Europe/Madrid',
-      'REFRESH-INTERVAL;VALUE=DURATION:PT1H',
-      'X-PUBLISHED-TTL:PT1H'
+      'X-WR-CALDESC:Sincronització en viu del calendari i tasques d\'estudi'
     ];
 
-    for (const ev of events) {
-      lines.push('BEGIN:VEVENT');
-      lines.push(`UID:${ev.uid}`);
-      lines.push(`DTSTAMP:${nowStr}`);
-      if (ev.isAllDay) {
-        lines.push(`DTSTART;VALUE=DATE:${formatIcsDate(ev.start, true)}`);
-        lines.push(`DTEND;VALUE=DATE:${formatIcsDate(ev.end, true)}`);
-      } else {
-        lines.push(`DTSTART:${formatIcsDate(ev.start)}`);
-        lines.push(`DTEND:${formatIcsDate(ev.end)}`);
-      }
-      lines.push(`SUMMARY:${ev.summary.replace(/\n/g, ' ')}`);
-      if (ev.description) {
-        lines.push(`DESCRIPTION:${ev.description.replace(/\n/g, '\\n')}`);
-      }
-      lines.push('END:VEVENT');
-    }
+    events.forEach(ev => {
+      ev.forEach(line => lines.push(foldLine(line)));
+    });
 
     lines.push('END:VCALENDAR');
+
     const icsContent = lines.join('\r\n');
 
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-    res.setHeader('Content-Disposition', 'inline; filename="planning-finals.ics"');
-    res.setHeader('Cache-Control', 'public, max-age=1800, s-maxage=1800, stale-while-revalidate=3600');
-    return res.status(200).send(icsContent);
+    res.setHeader('Content-Disposition', 'inline; filename="study-planner.ics"');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.status(200).send(icsContent);
 
   } catch (err) {
-    console.error('ICS Generation Error:', err);
-    return res.status(500).send('Error generating calendar feed');
+    console.error('Calendar generation error:', err);
+    res.status(500).send('Error generating calendar feed: ' + err.message);
   }
 };
