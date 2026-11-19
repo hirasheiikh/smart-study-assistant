@@ -1,7 +1,7 @@
-﻿const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const GH_TOKEN = process.env.GH_TOKEN;
-const REPO = 'hirasheiikh/planning-finals';
+const REPO = process.env.GH_REPO || 'hirasheiikh/smart-study-assistant';
 
 function getMadridDate() {
   const now = new Date();
@@ -9,6 +9,7 @@ function getMadridDate() {
 }
 
 function decodeEntities(str) {
+  if (!str) return '';
   return str.replace(/&#(\d+);/g, (m, dec) => String.fromCharCode(dec))
             .replace(/&quot;/g, '"')
             .replace(/&amp;/g, '&')
@@ -17,6 +18,7 @@ function decodeEntities(str) {
 }
 
 async function sendTelegram(text) {
+  if (!BOT_TOKEN || !CHAT_ID) return;
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   await fetch(url, {
     method: 'POST',
@@ -31,7 +33,7 @@ async function getGitHubFile() {
     headers: {
       'Authorization': `Bearer ${GH_TOKEN}`,
       'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'PlanningBot'
+      'User-Agent': 'SmartStudyBot'
     }
   });
   if (!res.ok) throw new Error(`GitHub get failed: ${res.status}`);
@@ -100,7 +102,7 @@ module.exports = async (req, res) => {
 
     if (mode === 'morning') {
       const lines = [];
-      lines.push(`📅 *Pla d'estudi: ${todayLabel} (${todayStr})*`);
+      lines.push(`📅 *Pla d'estudi: ${todayLabel || todayStr} (${todayStr})*`);
       lines.push('');
       if (yestPending.length > 0) {
         lines.push('⏳ *Pendent d\'ahir:*');
@@ -117,10 +119,10 @@ module.exports = async (req, res) => {
       return res.status(200).send('Morning notification sent');
     } else {
       const lines = [];
-      lines.push(`🌙 *Revisió de final de dia · ${todayLabel} (${todayStr})*`);
+      lines.push(`🌙 *Revisió de final de dia · ${todayLabel || todayStr} (${todayStr})*`);
       lines.push('');
-      lines.push('Bona nit Hira! Com ha anat la jornada d\'avui?');
-      lines.push('Aquest era el teu pla d\'avui:');
+      lines.push('Bona nit! Com ha anat la jornada d\'avui?');
+      lines.push('Aquest era el teu pla:');
       lines.push('');
       if (todayTasks.length > 0) {
         lines.push(...todayTasks);
