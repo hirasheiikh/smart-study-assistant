@@ -13,10 +13,6 @@
     {
       "source": "/calendar.ics",
       "destination": "/api/calendar"
-    },
-    {
-      "source": "/api/calendar.ics",
-      "destination": "/api/calendar"
     }
   ]
 }
