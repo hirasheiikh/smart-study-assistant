@@ -1,6 +1,6 @@
 const GH_TOKEN = process.env.GH_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const REPO = 'hirasheiikh/planning-finals';
+const REPO = process.env.GH_REPO || 'hirasheiikh/smart-study-assistant';
 
 function decodeEntities(str) {
   if (!str) return '';
@@ -17,10 +17,38 @@ function getMadridDate(offsetDays = 0) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
 
+function getMadridDateDetails() {
+  const now = new Date();
+  const timeZone = 'Europe/Madrid';
+
+  const nowDateTime = new Intl.DateTimeFormat('ca-ES', {
+    timeZone,
+    dateStyle: 'full',
+    timeStyle: 'medium'
+  }).format(now);
+
+  const weekdayName = new Intl.DateTimeFormat('ca-ES', {
+    timeZone,
+    weekday: 'long'
+  }).format(now);
+
+  const todayDate = getMadridDate(0);
+  const tomorrowStr = getMadridDate(1);
+  const dayAfterTomorrowStr = getMadridDate(2);
+
+  return {
+    nowDateTime,
+    weekdayName,
+    todayDate,
+    tomorrowStr,
+    dayAfterTomorrowStr
+  };
+}
+
 function cleanTaskTitle(text) {
   if (!text) return '';
   let clean = text.trim();
-  clean = clean.replace(/^(afegeix|afegir|apunta|apuntar|posa|posar|anota|anotar|recorda(?:'m)?|he de|cal)\s*[:,-]?\s*/i, '');
+  clean = clean.replace(/^(afegeix|afegir|apunta|apuntar|posa|posar|anota|anotar|recorda(?:\s*\'?m)?|he de|cal)\s*[:,-]?\s*/i, '');
   clean = clean.replace(/\s+(demà|dema|avui|avui a la nit|passat demà|dilluns|dimarts|dimecres|dijous|divendres|dissabte|diumenge)$/i, '');
   clean = clean.trim();
   if (clean.length > 0) {
@@ -35,7 +63,7 @@ async function getGitHubFile() {
     headers: {
       'Authorization': `Bearer ${GH_TOKEN}`,
       'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'PlanningAssistant'
+      'User-Agent': 'SmartStudyAssistant'
     }
   });
   if (!res.ok) throw new Error(`GitHub get failed: ${res.status}`);
@@ -52,7 +80,7 @@ async function saveGitHubFile(content, sha, message) {
     headers: {
       'Authorization': `Bearer ${GH_TOKEN}`,
       'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'PlanningAssistant'
+      'User-Agent': 'SmartStudyAssistant'
     },
     body: JSON.stringify({ message: message, content: b64, sha: sha, branch: 'main' })
   });
@@ -94,164 +122,224 @@ function parseAllTasks(content) {
   return all;
 }
 
-function getUpcomingScheduleOverview(content, fromDateStr, daysCount = 14) {
+function getUpcomingScheduleOverview(content, fromDateStr, daysCount = 30) {
   const state = getState(content);
   const doneSet = new Set(Array.isArray(state.done) ? state.done : []);
   const allDays = [];
-  const regex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>(.*?)<\/tr>/gs;
+  const regex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>.*?<td>(.*?)<\/td>.*?<td><ul class="tasks">(.*?)<\/ul><\/td>.*?<\/tr>/gs;
   let m;
+
   while ((m = regex.exec(content)) !== null) {
     const day = m[1];
-    if (day < fromDateStr) continue;
-    const inner = m[2];
-    const taskRegex = /<li\s+data-id="([^"]+)"([^>]*)>(.*?)<\/li>/gs;
+    const dayLabel = m[2].replace(/<[^>]+>/g, '').trim();
+    const tasksHtml = m[3];
+
     const tasks = [];
-    let tm;
-    while ((tm = taskRegex.exec(inner)) !== null) {
-      const id = tm[1];
-      const attrs = tm[2] || '';
-      const text = decodeEntities(tm[3].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
-      const isDone = doneSet.has(id);
-      const isMoved = attrs.includes('movedaway');
-      if (!isMoved) {
-        tasks.push({ id, text, isDone, isWork: text.toLowerCase().includes('feina') || text.toLowerCase().includes('grifols') });
+    const liRegex = /<li([^>]*)>(.*?)<\/li>/gs;
+    let li;
+    while ((li = liRegex.exec(tasksHtml)) !== null) {
+      const attrs = li[1];
+      const raw = li[2];
+      const idMatch = attrs.match(/data-id="([^"]+)"/);
+      const id = idMatch ? idMatch[1] : '';
+      const isNote = attrs.includes('note');
+      const isMovedAway = attrs.includes('movedaway');
+
+      if (!isMovedAway && id) {
+        const text = decodeEntities(raw.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+        const isDone = doneSet.has(id);
+        const isWork = text.toLowerCase().includes('feina');
+        tasks.push({ id, text, isDone, isWork, isNote });
       }
     }
-    allDays.push({ day, tasks, pendingCount: tasks.filter(t => !t.isDone).length, totalCount: tasks.length });
-    if (allDays.length >= daysCount) break;
+    allDays.push({ day, dayLabel, tasks });
   }
-  return allDays;
+
+  allDays.sort((a, b) => a.day.localeCompare(b.day));
+  const filtered = allDays.filter(d => d.day >= fromDateStr).slice(0, daysCount);
+
+  let out = '';
+  filtered.forEach(d => {
+    out += `📅 ${d.day} (${d.dayLabel}):\n`;
+    if (d.tasks.length === 0) {
+      out += '   - (Sense tasques)\n';
+    } else {
+      d.tasks.forEach(t => {
+        const mark = t.isDone ? 'fet' : 'pendent';
+        const workTag = t.isWork ? ' [feina]' : '';
+        out += `   - [${mark}] ${t.text}${workTag}\n`;
+      });
+    }
+  });
+  return out;
 }
 
-function executeActionBatch(initialContent, actions) {
-  let updated = initialContent;
-  const executionLog = [];
+function getOverdueTasks(content, todayDateStr) {
+  const state = getState(content);
+  const doneSet = new Set(Array.isArray(state.done) ? state.done : []);
+  const overdue = [];
+  const regex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>.*?<td>(.*?)<\/td>.*?<td><ul class="tasks">(.*?)<\/ul><\/td>.*?<\/tr>/gs;
+  let m;
+
+  while ((m = regex.exec(content)) !== null) {
+    const day = m[1];
+    if (day >= todayDateStr) continue;
+
+    const dayLabel = m[2].replace(/<[^>]+>/g, '').trim();
+    const tasksHtml = m[3];
+    const liRegex = /<li([^>]*)>(.*?)<\/li>/gs;
+    let li;
+    while ((li = liRegex.exec(tasksHtml)) !== null) {
+      const attrs = li[1];
+      const raw = li[2];
+      const idMatch = attrs.match(/data-id="([^"]+)"/);
+      const id = idMatch ? idMatch[1] : '';
+      const isMovedAway = attrs.includes('movedaway');
+
+      if (!isMovedAway && id && !doneSet.has(id)) {
+        const text = decodeEntities(raw.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+        overdue.push(`- ${day} (${dayLabel}): "${text}" (id: ${id})`);
+      }
+    }
+  }
+
+  if (overdue.length === 0) return '(Cap tasca pendent de dies passats)';
+  return overdue.slice(0, 25).join('\n');
+}
+
+function executeActionBatch(content, actions) {
+  let updated = content;
+  const log = [];
+  const allTasks = parseAllTasks(content);
 
   for (const act of actions) {
-    if (act.type === 'delete') {
-      const q = (act.query || '').toLowerCase().trim();
-      const all = parseAllTasks(updated);
-      const matches = all.filter(t => {
-        const textMatch = t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8)));
-        if (!textMatch) return false;
-        if (act.day) return t.day === act.day;
-        return true;
-      });
+    if (!act || !act.type) continue;
 
-      for (const target of matches) {
-        const liRegex = new RegExp(`\\s*<li[^>]*data-id="${target.id}"[^>]*>.*?</li>`, 's');
-        if (updated.match(liRegex)) {
-          updated = updated.replace(liRegex, '');
-          executionLog.push(`🗑️ Eliminada (${target.day}): "${target.text}"`);
-        }
-      }
-    } else if (act.type === 'add') {
-      const day = act.day || getMadridDate(1);
-      const clean = cleanTaskTitle(act.text);
+    if (act.type === 'add') {
+      const day = act.day;
+      const text = cleanTaskTitle(act.text);
       const isWork = Boolean(act.is_work);
-      const newId = `${day}-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 100)}`;
-      const formattedLi = isWork
-        ? `<li data-id="${newId}">💼 <strong>Feina:</strong> ${clean}</li>`
-        : `<li data-id="${newId}">${clean}</li>`;
+      if (!day || !text) continue;
+
+      const newId = `${day}-${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 90 + 10)}`;
+      const taskHtml = isWork
+        ? `<li data-id="${newId}">💼 <strong>Feina:</strong> ${text}</li>`
+        : `<li data-id="${newId}">${text}</li>`;
 
       const rowRegex = new RegExp(`(<tr[^>]*data-day="${day}"[^>]*>.*?<ul class="tasks">)(.*?)(</ul>)`, 's');
       if (updated.match(rowRegex)) {
-        updated = updated.replace(rowRegex, `$1$2${formattedLi}$3`);
-        executionLog.push(`➕ Afegida (${day}): "${clean}"`);
+        updated = updated.replace(rowRegex, `$1$2${taskHtml}$3`);
+        log.push(`➕ Afegida a ${day}: "${text}"`);
       }
-    } else if (act.type === 'move') {
-      const q = (act.query || '').toLowerCase().trim();
-      const targetDate = act.target_date || getMadridDate(1);
-      const all = parseAllTasks(updated);
-      const target = all.find(t => t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8))));
+    }
 
+    else if (act.type === 'move') {
+      const query = (act.query || '').toLowerCase().trim();
+      const targetDate = act.target_date;
+      if (!query || !targetDate) continue;
+
+      const target = allTasks.find(t => t.text.toLowerCase().includes(query) && t.day !== targetDate);
       if (target) {
-        const liMatch = updated.match(new RegExp(`<li\\s+data-id="${target.id}"[^>]*>(.*?)</li>`, 's'));
-        if (liMatch) {
-          const rawInner = liMatch[1];
-          updated = updated.replace(new RegExp(`\\s*<li\\s+data-id="${target.id}"[^>]*>.*?</li>`, 's'), '');
-          const newId = `${targetDate}-${Date.now().toString().slice(-4)}`;
-          const toRowRegex = new RegExp(`(<tr[^>]*data-day="${targetDate}"[^>]*>.*?<ul class="tasks">)(.*?)(</ul>)`, 's');
-          if (updated.match(toRowRegex)) {
-            updated = updated.replace(toRowRegex, `$1$2<li data-id="${newId}">${rawInner}</li>$3`);
-            executionLog.push(`⏩ Moguda a ${targetDate}: "${target.text}"`);
-          }
+        const liRegex = new RegExp(`\\s*<li[^>]*data-id="${target.id}"[^>]*>.*?</li>`, 's');
+        updated = updated.replace(liRegex, '');
+
+        const targetRowRegex = new RegExp(`(<tr[^>]*data-day="${targetDate}"[^>]*>.*?<ul class="tasks">)(.*?)(</ul>)`, 's');
+        if (updated.match(targetRowRegex)) {
+          const movedHtml = `<li data-id="${target.id}">${target.raw}</li>`;
+          updated = updated.replace(targetRowRegex, `$1$2${movedHtml}$3`);
+          log.push(`📦 Moguda de ${target.day} a ${targetDate}: "${target.text}"`);
         }
       }
-    } else if (act.type === 'edit') {
-      const q = (act.query || '').toLowerCase().trim();
-      const all = parseAllTasks(updated);
-      const target = all.find(t => t.text.toLowerCase().includes(q) || (q.length > 3 && q.includes(t.text.toLowerCase().slice(0, 8))));
+    }
+
+    else if (act.type === 'delete') {
+      const query = (act.query || '').toLowerCase().trim();
+      const day = act.day;
+      if (!query) continue;
+
+      const target = allTasks.find(t => {
+        const matchText = t.text.toLowerCase().includes(query);
+        return day ? (matchText && t.day === day) : matchText;
+      });
 
       if (target) {
-        const liMatch = updated.match(new RegExp(`(<li\\s+data-id="${target.id}"[^>]*>)(.*?)(</li>)`, 's'));
-        if (liMatch) {
-          let formatted = act.text || target.raw;
-          if (act.is_urgent && !formatted.includes('⚠️')) {
-            formatted = `⚠️ <strong>${formatted.replace(/<\/?strong>/g, '').replace(/^⚠️\s*/, '')}</strong>`;
-          } else if (act.is_bold && !formatted.includes('<strong>')) {
-            formatted = `<strong>${formatted}</strong>`;
-          }
-          updated = updated.replace(new RegExp(`(<li\\s+data-id="${target.id}"[^>]*>)(.*?)(</li>)`, 's'), `$1${formatted}$3`);
-          executionLog.push(`✏️ Modificada (${target.day}): "${target.text}" → "${formatted.replace(/<[^>]+>/g, '')}"`);
-        }
+        const liRegex = new RegExp(`\\s*<li[^>]*data-id="${target.id}"[^>]*>.*?</li>`, 's');
+        updated = updated.replace(liRegex, '');
+        log.push(`🗑️ Eliminada de ${target.day}: "${target.text}"`);
       }
     }
   }
 
-  return { updatedContent: updated, log: executionLog };
+  return { updatedContent: updated, log };
 }
 
-async function callGeminiAssistant(userMessage, conversationHistory, todayDate, upcomingSchedule) {
+async function callGeminiAssistant(userMessage, conversationHistory, temporalContext, scheduleContext, overdueContext) {
   if (!GEMINI_API_KEY) return null;
 
-  const scheduleContext = upcomingSchedule.map(d => {
-    const taskDetails = d.tasks.length > 0
-      ? d.tasks.map(t => `${t.isDone ? '[FET] ' : ''}${t.text}`).join(' · ')
-      : '(Cap tasca programada / dia completament lliure)';
-    return `📅 ${d.day} [${d.pendingCount} pendents de ${d.totalCount}]: ${taskDetails}`;
-  }).join('\n');
+  const { nowDateTime, weekdayName, todayDate, tomorrowStr, dayAfterTomorrowStr } = temporalContext;
 
-  const systemPrompt = `Ets l'Assistent Intel·ligent d'Estudi i Planificació de la Hira Sheikh Ahmed integrat directament a la seva aplicació web de finals.
-Ets el Gemini de debò: càlid, perspicaç, empàtic, analític, estructurat i 100% en CATALÀ.
+  const systemPrompt = `Ets l'assistent personal d'estudi i productivitat integrat a aquesta app de planificació intel·ligent. Parles amb l'estudiant com ho faria un bon assistent d'IA: amb conversa lliure, natural i sense límit de temes. Pots parlar de qualsevol cosa: dubtes de teoria, explicacions d'exercicis, com organitzar-se, concentració, motivació, idees de projectes o simplement xerrar. La gestió del planning és una de les coses que saps fer, no l'única.
 
-Perfil de la Hira:
-- Estudiant d'Enginyeria Informàtica a la UPC · FIB (assignatures clau: PAR, IDI, BD, ER, SIO).
-- QA & Validació de models d'IA a Grifols (reunions a les 15:30h, queries, automacions).
-- Data d'avui: ${todayDate}.
+PERSONALITAT I TO
+- Càlid, proper, encoratjador i directe, com un/a bon/a company/a d'estudi molt ben organitzat/da. Res de to de robot ni de formulari.
+- Respon amb naturalitat i empatia. Si l'usuari t'escriu en una altra llengua (català, castellà, anglès...), en to col·loquial, amb faltes, abreviatures o a mitges, l'entens igual i et comuniques de manera fluida en la mateixa llengua o per defecte en català.
+- Adapta la llargada: a una pregunta ràpida, respon curt. A una explicació de teoria o a un pla, amb tot el detall que calgui. No posis llistes ni títols quan una frase n'hi ha prou.
+- Sigues honest: si no saps una cosa o no la trobes a l'agenda, digues-ho. No t'inventis mai tasques, dates ni continguts que no siguin reals.
+- Recorda el que s'ha dit abans en aquesta conversa i fes-ho servir (p. ex. si l'usuari diu que avui està cansat/da o té un examen demà, tingues-ho en compte quan proposis plans).
 
-AGENDA I CÀRREGA DE FEINA DELS PROPERS 14 DIES:
+QUI ÉS L'USUARI
+- Un/a estudiant (o professional en formació contínua) que utilitza aquest planning per organitzar assignatures, lliuraments de pràctiques, exàmens, projectes i tasques personals o laborals.
+- Pots adaptar-te al seu ritme d'estudi i ajudar-lo a conciliar estudis, entregues i descans.
+
+CONTEXT TEMPORAL (calculat per l'app; és la ÚNICA font de veritat per a les dates)
+- Ara: ${nowDateTime} (${weekdayName})
+- Avui: ${todayDate} · Demà: ${tomorrowStr} · Demà passat: ${dayAfterTomorrowStr}
+- Interpreta les expressions relatives a partir d'aquí: "dissabte", "aquest cap de setmana", "la setmana que ve", "d'aquí a 3 dies", "després de l'examen", "abans de l'entrega"... Si una expressió és ambigua, tria la interpretació més lògica i explica quina data has entès.
+
+PLANNING COMPLET (injectat en viu)
 ${scheduleContext}
+Format: cada dia comença amb una línia "📅 YYYY-MM-DD" i a sota hi ha les seves tasques, amb l'estat (fet o pendent) i si són de feina.
 
-LES TEVES CAPACITATS PRINCIPALS:
-1. 💡 BUSCADOR DE FORATS I OPTIMITZADOR D'HORARIS:
-   Quan la Hira pregunti coses com:
-   - "Quan creus que hauria de fer X?"
-   - "Quins dies tinc més forats per estudiar / fer tasques?"
-   - "Quan em recomanes posar-me amb BD o PAR?"
-   -> Analitza minuciosament la càrrega de cada dia: quants pendents té, quins dies tenen menys feina o estan lliures, quines entregues té properes.
-   -> Dóna-li una resposta analítica i motivadora: assenyala els 2 o 3 millors dies concrets amb menys càrrega, explica per què és ideal i pregunta-li si vol que li programis.
+TASQUES PENDENTS DE DIES PASSATS (calculat per l'app)
+${overdueContext}
 
-2. ✍️ GESTIÓ DIRECTA DEL PLANNING (AFEGIR, ESBORRAR O MOURE TASQUES):
-   Si la Hira demana fer canvis (o accepta una proposta):
-   Retorna l'intent "propose_actions" amb l'array d'accions concretes.
+COM FAS SERVIR EL PLANNING
+- Quan et pregunti per un dia, una setmana o una data, llegeix la línia "📅" corresponent i explica-li fidelment què hi té. No diguis mai que un dia està lliure si hi ha tasques.
+- Quan et demani forats, càrrega o "quan puc fer X": analitza els dies (nombre de tasques pendents, feina, classes, entregues i exàmens propers) i proposa dies i franges concrets, amb el perquè.
+- Quan et demani reorganitzar, endarrerir o "posar-se al dia": fes servir les tasques pendents de dies passats, proposa on encabir-les segons la càrrega real dels dies vinents i prioritza segons les dates d'examen i d'entrega.
+- També pots fer servir el planning per iniciativa pròpia quan ajudi. Per exemple, si et diu "estic cansat/da", pots mirar què li queda avui i suggerir què es pot moure.
+- Per a temes que no tenen res a veure amb el planning, respon normalment, sense forçar-lo a la conversa.
 
-Retorna SEMPRE exclusivament el següent JSON vàlid:
+ACCIONS SOBRE EL PLANNING
+Pots proposar canvis que l'app aplicarà quan l'usuari cliqui "Confirmar". Tipus:
+- add: afegir una tasca -> { "type": "add", "day": "YYYY-MM-DD", "text": "...", "is_work": true|false }
+- move: moure una tasca existent -> { "type": "move", "query": "text identificatiu de la tasca", "target_date": "YYYY-MM-DD" }
+- delete: esborrar una tasca existent -> { "type": "delete", "query": "text identificatiu de la tasca", "day": "YYYY-MM-DD" }
+
+Regles:
+1. Només generes accions quan l'usuari demana un canvi, ja sigui explícitament ("mou-ho", "apunta'm", "treu això") o implícitament però clarament ("posa'm el metge dilluns", "això ja no cal que ho faci"). Si només pregunta o pensa en veu alta, proposa-ho en el text i pregunta si vol que ho apliquis.
+2. Si dius que mous, afegeixes o esborres alguna cosa, l'acció HA D'APARÈIXER a "actions". Mai diguis "fet" o "ja ho he mogut": el canvi no es desa fins que confirma. Digues "t'ho deixo preparat, confirma-ho i queda desat".
+3. Per a "move" i "delete", el "query" ha de ser un fragment literal i prou únic del text de la tasca tal com surt al planning.
+4. "text" ha de ser net i concís.
+5. Pots fer diverses accions alhora (p. ex. moure diverses tasques en una sola resposta).
+6. Si falta informació imprescindible, pregunta-la en lloc d'endevinar.
+
+FORMAT DE SORTIDA
+Respon sempre amb un únic objecte JSON vàlid, sense text fora del JSON ni blocs \`\`\`:
 {
-  "reply": "La teva resposta completa en català, amb format Markdown net (negretes, llistes, consells)",
-  "has_actions": true o false,
-  "actions": [
-    { "type": "add" | "delete" | "move", "day": "YYYY-MM-DD", "text": "text net", "is_work": false | true, "query": "..." }
-  ],
-  "summary": "Resum curt dels canvis que es faran al planning si l'usuari clica confirmar (o null)"
-}`;
+  "reply": "La teva resposta en Markdown, tan llarga o curta com calgui.",
+  "has_actions": true | false,
+  "actions": [ ... ],
+  "summary": "Una línia amb els canvis que s'aplicaran si confirma, o null si no n'hi ha"
+}
+Si no hi ha canvis: "has_actions": false, "actions": [], "summary": null.`;
 
   const contents = [];
   if (Array.isArray(conversationHistory)) {
-    for (const h of conversationHistory.slice(-6)) {
+    for (const h of conversationHistory.slice(-16)) {
       if (h.role && h.text) {
         contents.push({
-          role: h.role === 'assistant' ? 'model' : 'user',
+          role: h.role === 'assistant' || h.role === 'model' ? 'model' : 'user',
           parts: [{ text: h.text }]
         });
       }
@@ -262,7 +350,7 @@ Retorna SEMPRE exclusivament el següent JSON vàlid:
     parts: [{ text: userMessage }]
   });
 
-  const models = ['gemini-flash-lite-latest', 'gemini-3-flash-preview', 'gemini-pro-latest'];
+  const models = ['gemini-2.5-flash', 'gemini-3-flash-preview', 'gemini-flash-lite-latest', 'gemini-pro-latest'];
 
   for (const model of models) {
     try {
@@ -273,14 +361,18 @@ Retorna SEMPRE exclusivament el següent JSON vàlid:
         body: JSON.stringify({
           contents: contents,
           system_instruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: { response_mime_type: 'application/json' }
+          generationConfig: {
+            responseMimeType: 'application/json'
+          }
         })
       });
+
       if (res.ok) {
         const json = await res.json();
         const txt = json.candidates?.[0]?.content?.parts?.[0]?.text;
         if (txt) {
-          return JSON.parse(txt);
+          const parsed = JSON.parse(txt);
+          return parsed;
         }
       }
     } catch (e) {
@@ -306,7 +398,6 @@ module.exports = async (req, res) => {
   try {
     const { action, actions, message, history } = req.body || {};
 
-    // 1. Execució de canvis confirmats per l'usuari des del xat web
     if (action === 'execute_actions' && Array.isArray(actions) && actions.length > 0) {
       const { content, sha } = await getGitHubFile();
       const { updatedContent, log } = executeActionBatch(content, actions);
@@ -323,21 +414,21 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 2. Consulta conversacional a l'agent Gemini
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ ok: false, error: 'Cal enviar un missatge.' });
     }
 
-    const todayStr = getMadridDate(0);
+    const temporalContext = getMadridDateDetails();
     const { content } = await getGitHubFile();
-    const upcomingSchedule = getUpcomingScheduleOverview(content, todayStr, 14);
+    const upcomingSchedule = getUpcomingScheduleOverview(content, temporalContext.todayDate, 45);
+    const overdueContext = getOverdueTasks(content, temporalContext.todayDate);
 
-    const result = await callGeminiAssistant(message, history, todayStr, upcomingSchedule);
+    const result = await callGeminiAssistant(message, history, temporalContext, upcomingSchedule, overdueContext);
 
     if (!result) {
       return res.status(200).json({
         ok: true,
-        reply: "Hola Hira! He tingut un petit problema de comunicació amb el servei de Gemini. Em pots tornar a fer la pregunta?",
+        reply: "Hola! He tingut un petit problema momentani de connexió amb Gemini. Torna-m'ho a demanar i t'ho responc al moment!",
         has_actions: false,
         actions: []
       });
