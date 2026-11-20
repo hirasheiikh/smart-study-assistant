@@ -1329,21 +1329,39 @@ body {
   position: absolute;
   right: 10px;
   top: 32px;
+  min-width: 170px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-  z-index: 1005;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.16);
+  z-index: 2000;
   padding: 4px;
+}
+.task-menu.open-up {
+  top: auto;
+  bottom: 36px;
+}
+.tasks li.menu-open {
+  position: relative;
+  z-index: 40;
 }
 .tasks li.menu-open .task-menu {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
+.day-card:has(li.menu-open) {
+  overflow: visible !important;
+  position: relative;
+  z-index: 60;
+}
+.week:has(li.menu-open) {
+  position: relative;
+  z-index: 60;
+}
 .tm-item {
-  padding: 6px 12px;
-  font-size: 12px;
+  padding: 7px 12px;
+  font-size: 12.5px;
   font-weight: 600;
   border: none;
   background: transparent;
@@ -1351,6 +1369,7 @@ body {
   text-align: left;
   cursor: pointer;
   border-radius: 6px;
+  white-space: nowrap;
 }
 .tm-item:hover {
   background: #f1f5f9;
@@ -3866,9 +3885,38 @@ function setupDay(card){
     more.onclick=function(e){
       e.stopPropagation();
       var open=li.classList.contains('menu-open');
-      document.querySelectorAll('li.menu-open').forEach(function(x){x.classList.remove('menu-open');});
-      if(!open)li.classList.add('menu-open');
+      document.querySelectorAll('li.menu-open').forEach(function(x){
+        x.classList.remove('menu-open');
+        var m=x.querySelector('.task-menu');
+        if(m)m.classList.remove('open-up');
+      });
+      if(!open){
+        menu.classList.remove('open-up');
+        li.classList.add('menu-open');
+        var btnRect=more.getBoundingClientRect();
+        var menuRect=menu.getBoundingClientRect();
+        var menuH=menuRect.height||200;
+        var cardRect=card?card.getBoundingClientRect():null;
+        var safeBottom=window.innerHeight-(window.innerWidth<=860?92:20);
+        var spaceBelowViewport=safeBottom-btnRect.bottom;
+        var spaceBelowCard=cardRect?(cardRect.bottom-btnRect.bottom):spaceBelowViewport;
+        if((spaceBelowViewport<menuH+12||spaceBelowCard<menuH+12)&&btnRect.top>menuH+70){
+          menu.classList.add('open-up');
+        }
+      }
     };
+    if(!window.__taskMenuOutsideBound){
+      window.__taskMenuOutsideBound=true;
+      document.addEventListener('click',function(ev){
+        if(!ev.target.closest('.task-menu')&&!ev.target.closest('.task-more')){
+          document.querySelectorAll('li.menu-open').forEach(function(x){
+            x.classList.remove('menu-open');
+            var m=x.querySelector('.task-menu');
+            if(m)m.classList.remove('open-up');
+          });
+        }
+      });
+    }
     menu.querySelector('.tm-up').onclick=function(){li.classList.remove('menu-open');moveTaskOrder(id,'up');};
     menu.querySelector('.tm-down').onclick=function(){li.classList.remove('menu-open');moveTaskOrder(id,'down');};
     menu.querySelector('.tm-mv').onclick=function(){li.classList.remove('menu-open');openMove(li,id,card);};
