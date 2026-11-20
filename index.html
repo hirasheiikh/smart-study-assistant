@@ -1329,39 +1329,21 @@ body {
   position: absolute;
   right: 10px;
   top: 32px;
-  min-width: 170px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.16);
-  z-index: 2000;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  z-index: 1005;
   padding: 4px;
-}
-.task-menu.open-up {
-  top: auto;
-  bottom: 36px;
-}
-.tasks li.menu-open {
-  position: relative;
-  z-index: 40;
 }
 .tasks li.menu-open .task-menu {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.day-card:has(li.menu-open) {
-  overflow: visible !important;
-  position: relative;
-  z-index: 60;
-}
-.week:has(li.menu-open) {
-  position: relative;
-  z-index: 60;
-}
 .tm-item {
-  padding: 7px 12px;
-  font-size: 12.5px;
+  padding: 6px 12px;
+  font-size: 12px;
   font-weight: 600;
   border: none;
   background: transparent;
@@ -1369,7 +1351,6 @@ body {
   text-align: left;
   cursor: pointer;
   border-radius: 6px;
-  white-space: nowrap;
 }
 .tm-item:hover {
   background: #f1f5f9;
@@ -2674,437 +2655,883 @@ body.hide .week:not(:has(.day-card:not(.is-done))) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+/* ================= DRAWER & MODAL OVERLAY FIX ================= */
+body:has(#assistantDrawerOverlay) .btn-assistant-toggle,
+body:has(#assistantDrawerOverlay) .btn-scroll-top,
+body:has(.assistant-drawer-overlay) .btn-assistant-toggle,
+body:has(.assistant-drawer-overlay) .btn-scroll-top,
+body:has(.task-modal-overlay) .btn-assistant-toggle,
+body:has(.index-modal-overlay) .btn-assistant-toggle,
+body:has(.mobile-menu-overlay) .btn-assistant-toggle,
+body.drawer-open .btn-assistant-toggle,
+body.drawer-open .btn-scroll-top {
+  display: none !important;
+}
+.assistant-drawer-overlay {
+  z-index: 999999 !important;
+}
+.assistant-drawer-card {
+  z-index: 1000000 !important;
+}
+.btn-assistant-toggle {
+  z-index: 990 !important;
+}
+/* Polish: prevent label/value collision in subject cards & copy-button overlap in prompt box */
+.sc-line {
+  gap: 12px;
+}
+.sl-k {
+  flex-shrink: 0;
+}
+.sl-v {
+  text-align: right;
+}
+.sc-formula {
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+.prompt-text {
+  padding-right: 96px;
+}
+
   </style>
 </head>
 <body>
+  <div id="root"></div>
   <template id="content">
-<div class="planning-container">
-  <!-- Capçalera Principal -->
-  <header class="main-header">
-    <div class="header-content">
-      <div class="header-badge">🌟 Open Source Academic Template</div>
-      <h1 class="header-title">Smart Study Assistant & Planner</h1>
-      <p class="header-subtitle">Planificador acadèmic universal amb secretari d'estudi autònom (Gemini AI), sincronització en viu amb Telegram Bot, calendari RFC 5545 i Git-as-a-Database.</p>
-      
-      <div class="header-stats">
-        <div class="stat-card">
-          <span class="stat-num">6</span>
-          <span class="stat-label">Assignatures</span>
+<div class="top-dashboard">
+  <div class="dash-header-row">
+    <div>
+      <h1 class="dash-title">Smart Study Assistant &amp; Universal Planner</h1>
+      <p class="dash-subtitle">MD · AP · BD · XC · ES · Plantilla acadèmica intel·ligent amb Google Gemini i iCal</p>
+    </div>
+    <div class="dash-actions">
+      <a href="https://calendar.google.com/calendar/u/0/r" target="_blank" rel="noreferrer" class="btn-gcal">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        Google Calendar
+      </a>
+      <a href="/calendar.ics" target="_blank" class="btn-ical" title="Subscripció al canal dinàmic iCal">
+        Canal iCal (.ics)
+      </a>
+    </div>
+  </div>
+
+  <div class="legend-box">
+    <strong>✨ Assistent IA &amp; Gestió intel·ligent:</strong>
+    Clica a <strong>✨ Assistent IA</strong> (a la barra lateral o al botó flotant) per consultar forats lliures i reorganitzar el teu calendari amb Gemini.
+    A cada tasca tens <strong>⏩ Mou</strong> (calcula automàticament la càrrega de cada dia 🟢/🟡/🔴) i <strong>✏️ Edita</strong> (per marcar urgències o editar descripcions).
+  </div>
+
+  <div class="dash-widgets-grid">
+    <!-- Giny 1: Agenda d'avui -->
+    <div class="widget-card widget-today">
+      <div class="widget-head">
+        <span class="widget-title">📌 Agenda d'avui</span>
+        <div class="widget-head-actions">
+          <button type="button" class="btn-sort-today" id="btnSortToday" title="Ordena per hora (flexibles a dalt i cites cronològiques)">⏰ <span>Ordena</span></button>
+          <span class="widget-badge" id="todayDateBadge">Avui</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-num">30</span>
-          <span class="stat-label">Crèdits ECTS</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-num">100%</span>
-          <span class="stat-label">Cloud-First</span>
-        </div>
+      </div>
+      <div id="todayTasksList" class="today-tasks-container">
+        <div class="empty-today-msg">Carregant tasques d'avui…</div>
       </div>
     </div>
-  </header>
 
-  <!-- Índex Ràpid -->
-  <nav class="quick-index-nav" id="dash-quick-index">
-    <div class="qi-label">Dreceres:</div>
-    <div class="qi-pills">
-      <a href="#agenda-avui" class="qi-pill">📌 Agenda d'avui</a>
-      <a href="#assignatures" class="qi-pill">📚 Assignatures</a>
-      <a href="#planning-setmanal" class="qi-pill">📅 Calendari Setmanal</a>
-      <a href="#lliuraments" class="qi-pill">⚠️ Lliuraments Clau</a>
-      <a href="#examens" class="qi-pill">📝 Exàmens Finals</a>
+    <!-- Giny 2: Progrés d'estudi per fases -->
+    <div class="widget-card widget-progress">
+      <div class="widget-head">
+        <span class="widget-title">📊 Progrés d'estudi</span>
+        <span class="widget-badge purple" id="dashGlobalPct">0%</span>
+      </div>
+      <div class="phase-progress-list" id="phaseProgressContainer"></div>
     </div>
-  </nav>
 
-  <!-- Secció Assignatures -->
-  <section id="assignatures" class="section-card">
-    <h2 class="section-heading">📚 Assignatures del Semestre</h2>
-    <div class="subjects-grid">
-      <div class="subject-card" style="--sub-color: #7B337E;">
-        <div class="sub-header">
-          <span class="sub-code">MD</span>
-          <span class="sub-credits">6 ECTS</span>
+    <!-- Giny 3: Mini Calendari interactiu -->
+    <div class="widget-card widget-calendar">
+      <div class="widget-head">
+        <div class="cal-nav-controls">
+          <button id="prevMonthBtn" class="cal-nav-btn" type="button" aria-label="Mes anterior">‹</button>
+          <span class="widget-title" id="calMonthTitle">Novembre 2026</span>
+          <button id="nextMonthBtn" class="cal-nav-btn" type="button" aria-label="Mes següent">›</button>
         </div>
-        <h3 class="sub-name">Matemàtiques Discretes</h3>
-        <p class="sub-desc">Teoria de grafs, combinatòria, relacions d'ordre i inducció matemàtica.</p>
+        <span class="widget-badge blue">Interactiu</span>
       </div>
-
-      <div class="subject-card" style="--sub-color: #2563eb;">
-        <div class="sub-header">
-          <span class="sub-code">AP</span>
-          <span class="sub-credits">6 ECTS</span>
-        </div>
-        <h3 class="sub-name">Algorismes i Programació</h3>
-        <p class="sub-desc">Complexitat temporal, arbres, backtracking, algorismes voraços i grafs.</p>
-      </div>
-
-      <div class="subject-card" style="--sub-color: #059669;">
-        <div class="sub-header">
-          <span class="sub-code">BD</span>
-          <span class="sub-credits">6 ECTS</span>
-        </div>
-        <h3 class="sub-name">Sistemes de Bases de Dades</h3>
-        <p class="sub-desc">Model Entitat-Relació, disseny relacional, àlgebra relacional i consultes SQL avançades.</p>
-      </div>
-
-      <div class="subject-card" style="--sub-color: #d97706;">
-        <div class="sub-header">
-          <span class="sub-code">XC</span>
-          <span class="sub-credits">6 ECTS</span>
-        </div>
-        <h3 class="sub-name">Xarxes de Computadors</h3>
-        <p class="sub-desc">Arquitectura TCP/IP, encaminament, protocols de transport i programació de sòcols.</p>
-      </div>
-
-      <div class="subject-card" style="--sub-color: #dc2626;">
-        <div class="sub-header">
-          <span class="sub-code">ES</span>
-          <span class="sub-credits">6 ECTS</span>
-        </div>
-        <h3 class="sub-name">Enginyeria del Software</h3>
-        <p class="sub-desc">Metodologies àgils, patrons de disseny, proves unitàries i cicle de vida del programari.</p>
-      </div>
-
-      <div class="subject-card" style="--sub-color: #4b5563;">
-        <div class="sub-header">
-          <span class="sub-code">PROJ</span>
-          <span class="sub-credits">6 ECTS</span>
-        </div>
-        <h3 class="sub-name">Projecte / Feina</h3>
-        <p class="sub-desc">Desenvolupament en equip, gestió de tasques professionals i documentació tècnica.</p>
+      <div class="interactive-cal" id="miniCalGrid"></div>
+      <div class="cal-footer-legend">
+        <span class="leg-item"><span class="dot-ind today"></span> Avui</span>
+        <span class="leg-item"><span class="dot-ind planned"></span> Amb tasques</span>
+        <span class="leg-hint">Clica a un dia per anar-hi</span>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- Taula de Planning Setmanal -->
-  <section id="planning-setmanal" class="section-card">
-    <h2 class="section-heading">📅 Calendari Setmanal de Tasques</h2>
-    <div class="table-container">
-      <table class="planning-table">
-        <thead>
-          <tr>
-            <th style="width: 130px;">Data</th>
-            <th style="width: 140px;">Dia</th>
-            <th>Tasques d'Estudi i Activitats</th>
-          </tr>
-        </thead>
-        <tbody id="days">
-          <!-- Setmana 1 -->
-          <tr data-day="2026-11-16">
-            <td class="date-col">16-11-2026</td>
-            <td class="day-col">Dilluns</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-16-1">09:00 - 11:00 📚 MD: Teoria de Grafs i Isomorfisme</li>
-                <li data-id="2026-11-16-2">11:30 - 13:30 💻 AP: Sessió de laboratori (arbre binaris)</li>
-                <li data-id="2026-11-16-3">15:30 💼 Projecte: Reunió setmanal de coordinació d'equip</li>
-                <li data-id="2026-11-16-4">18:00 - 19:30 📖 Repàs exercicis de combinatòria</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-17">
-            <td class="date-col">17-11-2026</td>
-            <td class="day-col">Dimarts</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-17-1">10:00 - 12:00 🗄️ BD: Normalització i formes normals (1FN a 3FN)</li>
-                <li data-id="2026-11-17-2">15:00 - 17:00 🌐 XC: Pràctica de laboratori amb Wireshark</li>
-                <li data-id="2026-11-17-3">18:00 - 20:00 💻 AP: Resoldre 3 problemes del jutge online</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-18">
-            <td class="date-col">18-11-2026</td>
-            <td class="day-col">Dimecres</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-18-1">09:00 - 11:00 🚀 ES: Diagrames de seqüència UML</li>
-                <li data-id="2026-11-18-2">12:00 - 14:00 📚 MD: Resolució de problemes d'arbres</li>
-                <li data-id="2026-11-18-3">16:00 - 18:30 🗄️ BD: Redacció de l'informe de la Pràctica 1</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-19">
-            <td class="date-col">19-11-2026</td>
-            <td class="day-col">Dijous</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-19-1">10:00 - 12:00 🌐 XC: Protocols de la capa de transport (TCP vs UDP)</li>
-                <li data-id="2026-11-19-2">15:30 💼 Projecte: Revisió de codi i integració contínua</li>
-                <li data-id="2026-11-19-3">18:00 - 20:00 ⚠️ <strong>Entrega:</strong> Pràctica 1 de Bases de Dades (23:59h)</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-20">
-            <td class="date-col">20-11-2026</td>
-            <td class="day-col">Divendres</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-20-1">09:00 - 11:00 💻 AP: Algorismes de cerca en grafs (BFS/DFS)</li>
-                <li data-id="2026-11-20-2">11:30 - 13:30 🚀 ES: Sessió de proves de programari</li>
-                <li data-id="2026-11-20-3">17:00 🎯 Planificació dels objectius per al cap de setmana</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-21">
-            <td class="date-col">21-11-2026</td>
-            <td class="day-col">Dissabte</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-21-1">10:00 - 13:00 📝 Simulacre d'examen de Matemàtiques Discretes</li>
-                <li data-id="2026-11-21-2">16:00 - 18:00 💻 Implementació de l'algorisme de Dijkstra</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-22">
-            <td class="date-col">22-11-2026</td>
-            <td class="day-col">Diumenge</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-22-1">11:00 - 13:00 🗄️ Repàs de consultes amb agregacions i GROUP BY</li>
-                <li data-id="2026-11-22-2">18:00 - 19:30 📅 Organitzar la setmana entrant i revisar prioritats</li>
-              </ul>
-            </td>
-          </tr>
-
-          <!-- Setmana 2 -->
-          <tr data-day="2026-11-23">
-            <td class="date-col">23-11-2026</td>
-            <td class="day-col">Dilluns</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-23-1">09:00 - 11:00 📚 MD: Claus i coloració de grafs</li>
-                <li data-id="2026-11-23-2">11:30 - 13:30 💻 AP: Piles i cues de prioritat</li>
-                <li data-id="2026-11-23-3">15:30 💼 Projecte: Sprint review i definició de tasques</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-24">
-            <td class="date-col">24-11-2026</td>
-            <td class="day-col">Dimarts</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-24-1">10:00 - 12:00 🗄️ BD: Índexs B-Tree i optimització de consultes</li>
-                <li data-id="2026-11-24-2">15:00 - 17:00 🌐 XC: Subxarxes i direccionament IPv4/IPv6</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-25">
-            <td class="date-col">25-11-2026</td>
-            <td class="day-col">Dimecres</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-25-1">09:00 - 11:00 🚀 ES: Patrons arquitecturals (MVC, Microserveis)</li>
-                <li data-id="2026-11-25-2">12:00 - 14:00 📚 MD: Resolució de dubtes per al parcial</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-26">
-            <td class="date-col">26-11-2026</td>
-            <td class="day-col">Dijous</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-26-1">10:00 - 12:00 🌐 XC: Encaminament OSPF i BGP</li>
-                <li data-id="2026-11-26-2">16:00 - 19:00 📝 <strong>Examen Parcial:</strong> Matemàtiques Discretes (Aula A1)</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-27">
-            <td class="date-col">27-11-2026</td>
-            <td class="day-col">Divendres</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-27-1">09:00 - 11:00 💻 AP: Programació dinàmica bàsica</li>
-                <li data-id="2026-11-27-2">15:30 💼 Projecte: Tancament setmanal de lliuraments</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-28">
-            <td class="date-col">28-11-2026</td>
-            <td class="day-col">Dissabte</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-28-1">10:30 - 13:00 🌐 Exercicis de càlcul de màscares de xarxa</li>
-                <li data-id="2026-11-28-2">16:00 - 18:00 🚀 Proves d'integració del projecte</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-11-29">
-            <td class="date-col">29-11-2026</td>
-            <td class="day-col">Diumenge</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-29-1">11:00 - 13:00 📖 Lectura del capítol sobre concurrència en bases de dades</li>
-              </ul>
-            </td>
-          </tr>
-
-          <!-- Setmana 3 -->
-          <tr data-day="2026-11-30">
-            <td class="date-col">30-11-2026</td>
-            <td class="day-col">Dilluns</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-11-30-1">09:00 - 11:00 💻 AP: Problema de la motxilla (Knapsack)</li>
-                <li data-id="2026-11-30-2">15:30 💼 Projecte: Demo de funcionalitats implementades</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-12-01">
-            <td class="date-col">01-12-2026</td>
-            <td class="day-col">Dimarts</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-12-01-1">10:00 - 12:00 🗄️ BD: Transaccions, ACID i nivells d'aïllament</li>
-                <li data-id="2026-12-01-2">15:00 - 17:00 🌐 XC: Sòcols en Python (client/servidor)</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-12-02">
-            <td class="date-col">02-12-2026</td>
-            <td class="day-col">Dimecres</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-12-02-1">09:00 - 11:00 🚀 ES: Refactorització i Clean Code</li>
-                <li data-id="2026-12-02-2">17:00 - 19:00 ⚠️ <strong>Entrega:</strong> Pràctica 2 d'Algorismes (23:59h)</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-12-03">
-            <td class="date-col">03-12-2026</td>
-            <td class="day-col">Dijous</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-12-03-1">10:00 - 12:00 🌐 XC: Seguretat en xarxes (TLS/SSL, SSH)</li>
-                <li data-id="2026-12-03-2">15:30 💼 Projecte: Sessió de resolució de bugs</li>
-              </ul>
-            </td>
-          </tr>
-
-          <tr data-day="2026-12-04">
-            <td class="date-col">04-12-2026</td>
-            <td class="day-col">Divendres</td>
-            <td>
-              <ul class="tasks">
-                <li data-id="2026-12-04-1">09:00 - 12:00 🗄️ Sessió pràctica d'SQL tuning</li>
-                <li data-id="2026-12-04-2">16:00 - 18:00 📚 Repàs general de teoria</li>
-              </ul>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- Índex Ràpid de Seccions -->
+  <div class="dash-quick-index">
+    <div class="dqi-header">
+      <span class="dqi-title">📑 Índex ràpid de seccions</span>
+      <span class="dqi-hint">Clica per saltar directament al bloc desitjat</span>
     </div>
-  </section>
-
-  <!-- Lliuraments Clau -->
-  <section id="lliuraments" class="section-card">
-    <h2 class="section-heading">⚠️ Lliuraments i Dates Clau</h2>
-    <div class="table-container">
-      <table class="planning-table">
-        <thead>
-          <tr>
-            <th>Data Límit</th>
-            <th>Assignatura</th>
-            <th>Acte d'Avaluació</th>
-            <th>Pes</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>19-11-2026 (23:59h)</td>
-            <td>🗄️ BD</td>
-            <td>Pràctica 1: Disseny Relacional i SQL</td>
-            <td>15%</td>
-          </tr>
-          <tr>
-            <td>02-12-2026 (23:59h)</td>
-            <td>💻 AP</td>
-            <td>Pràctica 2: Cerca en Grafs i Arbres</td>
-            <td>20%</td>
-          </tr>
-          <tr>
-            <td>15-12-2026 (23:59h)</td>
-            <td>🌐 XC</td>
-            <td>Pràctica de Laboratori: Servidor de Sòcols</td>
-            <td>15%</td>
-          </tr>
-          <tr>
-            <td>08-01-2027 (23:59h)</td>
-            <td>🚀 ES</td>
-            <td>Projecte Final de Programari (Release v1.0)</td>
-            <td>30%</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="dqi-chips">
+      <a href="#0-situacio-i-objectius" class="dqi-chip highlight"><span class="dqi-icon">🎯</span> 0. Objectius i Assignatures</a>
+      <a href="#1-metodologia-destudi" class="dqi-chip"><span class="dqi-icon">📘</span> 1. Metodologia</a>
+      <a href="#2-horari-setmanal" class="dqi-chip"><span class="dqi-icon">⏰</span> 2. Horari Setmanal</a>
+      <a href="#3-regles-del-pla" class="dqi-chip"><span class="dqi-icon">⚖️</span> 3. Regles del pla</a>
+      <a href="#setmana-1-162211" class="dqi-chip highlight"><span class="dqi-icon">🚀</span> Setmana 1 (16–22/11)</a>
+      <a href="#setmana-2-232911" class="dqi-chip"><span class="dqi-icon">📅</span> Setmana 2 (23–29/11)</a>
+      <a href="#setmana-3-3011612" class="dqi-chip"><span class="dqi-icon">📅</span> Setmana 3 (30/11–6/12)</a>
+      <a href="#5-fase-2" class="dqi-chip"><span class="dqi-icon">⚡</span> Fase 2 (7–22/12)</a>
+      <a href="#6-fase-3" class="dqi-chip"><span class="dqi-icon">❄️</span> Fase 3: Repàs (Gen)</a>
+      <a href="#7-sprint-final" class="dqi-chip"><span class="dqi-icon">🏁</span> Sprint Finals (Gen)</a>
+      <a href="#8-checklists-del-dia-abans" class="dqi-chip"><span class="dqi-icon">📋</span> 8. Checklists</a>
+      <a href="#9-punts-de-control" class="dqi-chip"><span class="dqi-icon">🚩</span> 9. Punts de control</a>
     </div>
-  </section>
-
-  <!-- Calendari d'Exàmens -->
-  <section id="examens" class="section-card">
-    <h2 class="section-heading">📝 Calendari d'Exàmens Finals</h2>
-    <div class="table-container">
-      <table class="planning-table">
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Hora</th>
-            <th>Assignatura</th>
-            <th>Aula</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>26-11-2026</td>
-            <td>16:00 - 19:00</td>
-            <td>📚 Matemàtiques Discretes (Parcial)</td>
-            <td>Aula A1</td>
-          </tr>
-          <tr>
-            <td>11-01-2027</td>
-            <td>09:00 - 12:00</td>
-            <td>💻 Algorismes i Programació (Final)</td>
-            <td>Aula B2</td>
-          </tr>
-          <tr>
-            <td>14-01-2027</td>
-            <td>15:00 - 18:00</td>
-            <td>🗄️ Sistemes de Bases de Dades (Final)</td>
-            <td>Aula C1</td>
-          </tr>
-          <tr>
-            <td>18-01-2027</td>
-            <td>09:00 - 12:00</td>
-            <td>🌐 Xarxes de Computadors (Final)</td>
-            <td>Aula B1</td>
-          </tr>
-          <tr>
-            <td>22-01-2027</td>
-            <td>15:00 - 18:00</td>
-            <td>🚀 Enginyeria del Software (Final)</td>
-            <td>Aula A2</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+  </div>
 </div>
-  </template>
 
-  <script id="state" type="application/json">{"done":[],"t":1731974400000}</script>
+<h2 id="0-situacio-i-objectius">0. Situació i objectius</h2>
+<h3 id="assignatures-del-semestre">Assignatures del semestre</h3>
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Nota actual</th>
+      <th>Fórmula</th>
+      <th>Risc</th>
+      <th>Mínim per aprovar</th>
+      <th>Objectiu de seguretat</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>MD · Matemàtiques Discretes</strong></td>
+      <td>Parcial <strong>4,2</strong> · Entregues 7,5</td>
+      <td>0,30·Parcial + 0,50·Final + 0,20·Entregues</td>
+      <td>🔴 ALT</td>
+      <td>Final ≥ 4,5 i completar totes les entregues</td>
+      <td>Final ≥ 6,0 per consolidar nota</td>
+    </tr>
+    <tr>
+      <td><strong>AP · Algorismes i Programació</strong></td>
+      <td>Parcial <strong>5,1</strong> · Pràctiques 8,2</td>
+      <td>0,25·Parcial + 0,45·Final + 0,30·Pràctiques</td>
+      <td>🟠 MITJÀ</td>
+      <td>Pràctica 2 ≥ 5 i final ≥ 4,0</td>
+      <td>Final ≥ 6,0 + entregar pràctica a temps</td>
+    </tr>
+    <tr>
+      <td><strong>BD · Sistemes de Bases de Dades</strong></td>
+      <td>Parcial <strong>6,4</strong> · Laboratori 7,8</td>
+      <td>0,35·Parcial + 0,45·Final + 0,20·Laboratori</td>
+      <td>🟢 BAIX</td>
+      <td>Final ≥ 3,8 mantenint el ritme de laboratori</td>
+      <td>Final ≥ 5,5 i repassar transaccions</td>
+    </tr>
+    <tr>
+      <td><strong>XC · Xarxes de Computadors</strong></td>
+      <td>Pràctica 1 <strong>6,0</strong> · Test 5,4</td>
+      <td>0,25·Test + 0,45·Final + 0,30·Laboratori</td>
+      <td>🟠 MITJÀ</td>
+      <td>Servidor de sòcols ≥ 5 i final ≥ 4,2</td>
+      <td>Final ≥ 5,5 + completar laboratori</td>
+    </tr>
+    <tr>
+      <td><strong>ES · Enginyeria del Software</strong></td>
+      <td>Projecte <strong>7,9</strong> · Qüestionaris 8,6</td>
+      <td>0,50·Projecte + 0,20·Qüestionaris + 0,30·Final</td>
+      <td>🟢 MOLT BAIX</td>
+      <td>Mantenir el lliurament v1.0 del projecte</td>
+      <td>Final ≥ 5,0 per pujar mitjana</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="que-entra-a-cada-examen">Què entra a cada examen</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Examen</th>
+      <th>Temes principals</th>
+      <th>Focus de repàs</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>MD Parcial i Final</strong></td>
+      <td>Inducció, combinatòria avançada, relacions d'ordre i teoria de grafs</td>
+      <td>Demostracions per inducció i recorreguts eulerians/hamiltonians</td>
+    </tr>
+    <tr>
+      <td><strong>AP Final</strong></td>
+      <td>Arbres binaris, cerca amb backtracking, programació dinàmica i grafs</td>
+      <td>Anàlisi de complexitat temporal i casos límit en grafs ponderats</td>
+    </tr>
+    <tr>
+      <td><strong>BD Final</strong></td>
+      <td>Model Entitat-Relació, normalització, SQL, transaccions ACID i índexs</td>
+      <td>Consultes complexes, nivells d'aïllament i optimització amb índexs</td>
+    </tr>
+    <tr>
+      <td><strong>XC Final</strong></td>
+      <td>Arquitectura TCP/IP, encaminament OSPF/BGP, UDP/TCP i programació de sòcols</td>
+      <td>Control de congestió TCP, diagrames de seqüència i seguretat TLS</td>
+    </tr>
+    <tr>
+      <td><strong>ES Final</strong></td>
+      <td>Patrons de disseny, arquitectura neta, proves unitàries i refactorització</td>
+      <td>Identificació d'antipatrons i disseny amb responsabilitat única</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="calendari-clau">Calendari clau</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Data</th>
+      <th>Què</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Cada dilluns</td>
+      <td>Revisió ràpida de setmana, reequilibri de tasques pendents i bloc de <code>MD</code></td>
+    </tr>
+    <tr>
+      <td>19/11</td>
+      <td>Entrega BD — Pràctica 1 de disseny relacional i SQL (23:59 h)</td>
+    </tr>
+    <tr>
+      <td>26/11</td>
+      <td>Parcial MD — Combinatòria, recurrències i grafs (16:00–19:00 h)</td>
+    </tr>
+    <tr>
+      <td>02/12</td>
+      <td>Entrega AP — Pràctica 2 de cerca en grafs i arbres (23:59 h)</td>
+    </tr>
+    <tr>
+      <td>15/12</td>
+      <td>Entrega XC — Pràctica de laboratori de servidor de sòcols (23:59 h)</td>
+    </tr>
+    <tr>
+      <td>08/01</td>
+      <td>Entrega ES — Projecte final Release v1.0 i documentació (23:59 h)</td>
+    </tr>
+    <tr>
+      <td>11/01</td>
+      <td>Examen final AP — Algorismes i Programació (09:00–12:00 h)</td>
+    </tr>
+    <tr>
+      <td>14/01</td>
+      <td>Examen final BD — Sistemes de Bases de Dades (15:00–18:00 h)</td>
+    </tr>
+    <tr>
+      <td>18/01</td>
+      <td>Examen final XC — Xarxes de Computadors (09:00–12:00 h)</td>
+    </tr>
+    <tr>
+      <td>22/01</td>
+      <td>Examen final ES — Enginyeria del Software (15:00–18:00 h)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="distribucio-sessions">Distribució de sessions d'estudi</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Assignatura</th>
+      <th>Material principal</th>
+      <th>Sessions recomanades</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>MD</strong></td>
+      <td>Col·lecció d'exercicis resolts i exàmens anteriors (<code>Examen_MD_2025</code>)</td>
+      <td>8 blocs de 50 min</td>
+    </tr>
+    <tr>
+      <td><strong>AP</strong></td>
+      <td>Problemes de grafs, arbres i simulacres de codi cronometrats</td>
+      <td>7 blocs de 50 min</td>
+    </tr>
+    <tr>
+      <td><strong>BD</strong></td>
+      <td>Fulls d'SQL, esquemes relacionals i exercicis de transaccions</td>
+      <td>5 blocs de 50 min</td>
+    </tr>
+    <tr>
+      <td><strong>XC</strong></td>
+      <td>Traces de xarxa, exercicis TCP/IP i guió de sòcols</td>
+      <td>6 blocs de 50 min</td>
+    </tr>
+    <tr>
+      <td><strong>ES</strong></td>
+      <td>Patrons clau, diagrames UML i proves unitàries</td>
+      <td>4 blocs de 50 min</td>
+    </tr>
+    <tr>
+      <td><strong>Total</strong></td>
+      <td>Pla complet del semestre fins al Sprint Final</td>
+      <td>30 blocs repartits en 4 fases</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="1-metodologia-destudi">1. Metodologia d'estudi</h2>
+<h3 id="blocs-profunds">📘 Blocs d'estudi profund (50/10)</h3>
+<ul>
+  <li>Treballa amb temporitzador en blocs de <strong>50 minuts de focus real + 10 minuts de descans</strong> sense pantalles.</li>
+  <li>Reserva el bloc principal del dia per a l'assignatura amb risc més alt (<code>MD</code> o <code>AP</code>).</li>
+  <li>Comença sempre resolent un problema sense mirar les solucions per detectar llacunes reals.</li>
+</ul>
+
+<h3 id="simulacres-cronometrats">⏱️ Simulacres d'examen cronometrats</h3>
+<ul>
+  <li>Fes com a mínim un simulacre complet amb rellotge abans de cada parcial o final.</li>
+  <li>Dedica els últims 15 minuts del simulacre a corregir en vermell els errors recurrents i apuntar-los al xuletari.</li>
+</ul>
+
+<h3 id="repas-vespre">🌙 Repàs lleuger i consolidació de vespre</h3>
+<ul>
+  <li>Als vespres prioritza tasques curtes: targetes de teoria, lectura de resums i actualització de l'estat al planner.</li>
+  <li>Tanca la jornada planificant la primera tasca de l'endemà abans de desconnectar.</li>
+</ul>
+
+<h2 id="2-horari-setmanal">2. Horari setmanal</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Dia</th>
+      <th>Classes i feina</th>
+      <th>Bloc principal</th>
+      <th>Bloc de vespre</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Dilluns</td>
+      <td>09:00–11:00 MD · 11:30–13:30 AP</td>
+      <td>15:00–18:00 MD i AP</td>
+      <td>19:30–21:00 Repàs i revisió setmanal</td>
+    </tr>
+    <tr>
+      <td>Dimarts</td>
+      <td>09:00–11:00 BD · 15:00–18:00 Feina / Projecte</td>
+      <td>11:30–13:30 XC</td>
+      <td>19:00–21:00 Pràctica BD</td>
+    </tr>
+    <tr>
+      <td>Dimecres</td>
+      <td>09:00–11:00 ES · 12:00–14:00 XC</td>
+      <td>16:00–19:00 AP i Grafs</td>
+      <td>20:00–21:30 Exercicis MD</td>
+    </tr>
+    <tr>
+      <td>Dijous</td>
+      <td>10:00–12:00 BD · 15:00–18:00 Feina / Projecte</td>
+      <td>12:30–14:00 Teoria XC</td>
+      <td>19:30–21:00 Pràctica sòcols XC</td>
+    </tr>
+    <tr>
+      <td>Divendres</td>
+      <td>09:00–11:00 Seminari ES</td>
+      <td>11:30–14:30 Simulacre MD</td>
+      <td>17:00–19:30 Tancament de setmana</td>
+    </tr>
+    <tr>
+      <td>Dissabte</td>
+      <td>Descans actiu</td>
+      <td>10:00–13:30 Simulacre d'examen</td>
+      <td>Tarda lliure</td>
+    </tr>
+    <tr>
+      <td>Diumenge</td>
+      <td>Planificació lleugera</td>
+      <td>11:00–13:00 Repàs d'errors</td>
+      <td>18:30–20:00 Preparar setmana següent</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="blocs-vespre-per-fase">Blocs de vespre per fase</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Període</th>
+      <th>Dilluns</th>
+      <th>Dimarts</th>
+      <th>Dimecres</th>
+      <th>Dijous</th>
+      <th>Divendres</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Fase 1 (16/11 → 6/12)</td>
+      <td>MD exercicis</td>
+      <td>BD SQL</td>
+      <td>AP pràctica 2</td>
+      <td>XC sòcols</td>
+      <td>Repàs lleuger</td>
+    </tr>
+    <tr>
+      <td>Fase 2 (7/12 → 22/12)</td>
+      <td>XC laboratori</td>
+      <td>ES projecte</td>
+      <td>AP arbres</td>
+      <td>BD transaccions</td>
+      <td>Test setmanal</td>
+    </tr>
+    <tr>
+      <td>Fase 3 (23/12 → 10/01)</td>
+      <td>Simulacre AP</td>
+      <td>Simulacre BD</td>
+      <td>Simulacre XC</td>
+      <td>Simulacre ES</td>
+      <td>Errors i fórmules</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="3-regles-del-pla">3. Regles del pla (no negociables)</h2>
+<ol>
+  <li><strong>Prioritat absoluta a les entregues:</strong> cap tema de repàs pot desplaçar una entrega dins les 48 hores prèvies al tancament.</li>
+  <li><strong>Teoria mínima abans de fer problemes:</strong> dedica un màxim de 20 minuts a revisar conceptes abans de passar a exercicis pràctics.</li>
+  <li><strong>Simulacre amb rellotge real:</strong> sense mòbil ni apunts fins acabar el temps estipulat.</li>
+  <li><strong>Llibreta d'errors activa:</strong> cada fallada en un exercici o simulacre s'apunta amb la regla per evitar repetir-la.</li>
+  <li><strong>Ritme sostenible de blocs de 50 min:</strong> millor tres blocs concentrats que sis hores disperses.</li>
+  <li><strong>Tancament obligatori a les 23:00 h:</strong> respectar les hores de son és innegociable per consolidar memòria.</li>
+</ol>
+
+<h2 id="4-fase-1">4. FASE 1 · 16/11 → 6/12: Entregues i temari</h2>
+<h3 id="setmana-1-162211">Setmana 1 (16–22/11)</h3>
+<table>
+  <thead>
+    <tr><th>Dia</th><th>Pla del dia</th></tr>
+  </thead>
+  <tbody>
+    <tr data-day="2026-11-16">
+      <td>Dl 16</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-16-1">09:00 - 11:00 📚 MD: Repassar teoria de combinatòria i permutacions</li>
+          <li data-id="2026-11-16-2">15:00 - 17:00 💻 AP: Implementar cerca en amplitud (BFS) en grafs</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-17">
+      <td>Dt 17</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-17-1">10:00 - 12:00 🗄️ BD: Consultes SQL complexes amb JOINs i subconsultes</li>
+          <li data-id="2026-11-17-2">16:00 - 18:00 🌐 XC: Lectura del model OSI i capa d'enllaç</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-18">
+      <td>Dc 18</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-18-1">09:30 - 11:30 🚀 ES: Definir casos d'ús i històries d'usuari Sprint 1</li>
+          <li data-id="2026-11-18-2">17:00 - 19:00 📚 MD: Resoldre 10 exercicis d'inducció matemàtica</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-19">
+      <td>Dj 19</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-19-1">11:00 - 13:00 🌐 XC: Pràctica d'anàlisi de paquets amb Wireshark</li>
+          <li data-id="2026-11-19-2">18:00 - 20:00 ⚠️ <strong>Entrega:</strong> Pràctica 1 de Bases de Dades (23:59 h)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-20">
+      <td>Dv 20</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-20-1">09:00 - 11:00 💻 AP: Repassar complexitat temporal i notació Big-O</li>
+          <li data-id="2026-11-20-2">15:00 - 17:30 💼 Projecte: Reunió de seguiment i revisió de PRs</li>
+          <li data-id="2026-11-20-3">📚 MD: Preparar esquema de fórmules de recurrències per al parcial</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-21">
+      <td>Ds 21</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-21-1">10:30 - 13:00 📖 Sessió intensiva d'estudi setmanal (MD i AP)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-22">
+      <td>Dg 22</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-22-1">18:00 - 19:30 🗓️ Planificar blocs de la setmana entrant i revisar llibreta d'errors</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="setmana-2-232911">Setmana 2 (23–29/11)</h3>
+<table>
+  <thead>
+    <tr><th>Dia</th><th>Pla del dia</th></tr>
+  </thead>
+  <tbody>
+    <tr data-day="2026-11-23">
+      <td>Dl 23</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-23-1">09:00 - 11:00 📚 MD: Relacions d'equivalència i diagrames de Hasse</li>
+          <li data-id="2026-11-23-2">16:00 - 18:00 💻 AP: Algorisme de Dijkstra i camins mínims</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-24">
+      <td>Dt 24</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-24-1">10:00 - 12:00 🗄️ BD: Normalització d'esquemes (FN1, FN2, FN3, FNBC)</li>
+          <li data-id="2026-11-24-2">15:00 - 17:00 🚀 ES: Patrons creacionals (Singleton, Factory)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-25">
+      <td>Dc 25</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-25-1">09:00 - 11:30 🌐 XC: Protocols de capa de xarxa (IPv4, subnetting)</li>
+          <li data-id="2026-11-25-2">17:30 - 19:30 💻 AP: Backtracking i resolució de problemes clàssics</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-26">
+      <td>Dj 26</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-26-1">16:00 - 19:00 ⚠️ <strong>Examen Parcial:</strong> Matemàtiques Discretes (Aula A1)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-27">
+      <td>Dv 27</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-27-1">10:00 - 12:30 🗄️ BD: Àlgebra relacional i càlcul de consultes</li>
+          <li data-id="2026-11-27-2">16:00 - 18:00 🚀 ES: Escriure tests unitaris automatitzats</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-28">
+      <td>Ds 28</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-28-1">10:00 - 12:30 💻 AP: Avançar esquelet de la Pràctica 2 (grafs)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-11-29">
+      <td>Dg 29</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-29-1">18:30 - 20:00 🌐 XC: Repàs de problemes de subnetting</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="setmana-3-3011612">Setmana 3 (30/11–6/12)</h3>
+<table>
+  <thead>
+    <tr><th>Dia</th><th>Pla del dia</th></tr>
+  </thead>
+  <tbody>
+    <tr data-day="2026-11-30">
+      <td>Dl 30</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-11-30-1">09:00 - 11:00 📚 MD: Teoria de grafs, arbres generadors i recorreguts</li>
+          <li data-id="2026-11-30-2">16:00 - 18:00 💻 AP: Programació dinàmica i memoïtzació</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-12-01">
+      <td>Dt 1</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-12-01-1">10:00 - 12:00 🗄️ BD: Transaccions, ACID i nivells d'aïllament</li>
+          <li data-id="2026-12-01-2">15:00 - 17:00 🌐 XC: Sòcols en Python (client/servidor)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-12-02">
+      <td>Dc 2</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-12-02-1">09:00 - 11:00 🚀 ES: Refactorització i Clean Code</li>
+          <li data-id="2026-12-02-2">17:00 - 19:00 ⚠️ <strong>Entrega:</strong> Pràctica 2 d'Algorismes (23:59 h)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-12-03">
+      <td>Dj 3</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-12-03-1">10:00 - 12:00 🌐 XC: Seguretat en xarxes (TLS/SSL, SSH)</li>
+          <li data-id="2026-12-03-2">15:30 💼 Projecte: Sessió de resolució de bugs</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-12-04">
+      <td>Dv 4</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-12-04-1">09:00 - 12:00 🗄️ Sessió pràctica d'optimització SQL</li>
+          <li data-id="2026-12-04-2">16:00 - 18:00 📚 Repàs general de teoria</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-12-05">
+      <td>Ds 5</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-12-05-1">10:30 - 12:30 💻 Simulacre de problemes d'AP (arbres i grafs)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-12-06">
+      <td>Dg 6</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-12-06-1">19:00 - 20:00 🗓️ Balanç de la Fase 1 i ajust d'objectius</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="5-fase-2">5. FASE 2 · 7/12 → 22/12: Pràctiques i parcials</h2>
+<h3 id="setmana-4-71312">Setmana 4 (7–13/12)</h3>
+<table>
+  <thead>
+    <tr><th>Dia</th><th>Pla del dia</th></tr>
+  </thead>
+  <tbody>
+    <tr data-day="2026-12-07">
+      <td>Dl 7</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-12-07-1">10:00 - 12:30 🌐 XC: Implementar servidor concurrent TCP</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-12-09">
+      <td>Dc 9</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-12-09-1">16:00 - 18:30 🚀 ES: Integració del Release v1.0 i proves d'acceptació</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-12-11">
+      <td>Dv 11</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-12-11-1">09:30 - 12:00 🗄️ BD: Estructures físiques, índexs B+ i hashing</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="setmana-5-142012">Setmana 5 (14–20/12)</h3>
+<table>
+  <thead>
+    <tr><th>Dia</th><th>Pla del dia</th></tr>
+  </thead>
+  <tbody>
+    <tr data-day="2026-12-15">
+      <td>Dt 15</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-12-15-1">18:00 - 20:00 ⚠️ <strong>Entrega:</strong> Servidor de Sòcols XC (23:59 h)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2026-12-18">
+      <td>Dv 18</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2026-12-18-1">10:00 - 12:30 📚 MD: Simulacre complet amb examen antic</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="6-fase-3">6. FASE 3 · 23/12 → 10/01: Repàs i simulacres</h2>
+<h3 id="setmana-6-41001">Setmana 6 (4–10/01)</h3>
+<table>
+  <thead>
+    <tr><th>Dia</th><th>Pla del dia</th></tr>
+  </thead>
+  <tbody>
+    <tr data-day="2027-01-04">
+      <td>Dl 4</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2027-01-04-1">09:30 - 12:30 💻 AP: Simulacre complet de final + correcció en vermell</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2027-01-06">
+      <td>Dc 6</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2027-01-06-1">16:00 - 18:30 🗄️ BD: Simulacre d'examen de Bases de Dades</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2027-01-08">
+      <td>Dv 8</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2027-01-08-1">18:00 - 20:00 ⚠️ <strong>Entrega:</strong> Projecte ES Release v1.0 (23:59 h)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2027-01-10">
+      <td>Dg 10</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2027-01-10-1">17:00 - 19:00 💻 AP: Repàs suau del checklist de finals</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="7-sprint-final">7. SPRINT FINAL · 11/01 → 22/01: Exàmens finals</h2>
+<h3 id="setmana-7-111801">Setmana d'exàmens (11–22/01)</h3>
+<table>
+  <thead>
+    <tr><th>Dia</th><th>Pla del dia</th></tr>
+  </thead>
+  <tbody>
+    <tr data-day="2027-01-11">
+      <td>Dl 11</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2027-01-11-1">09:00 - 12:00 ⚠️ <strong>Examen Final:</strong> Algorismes i Programació (Aula B2)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2027-01-14">
+      <td>Dj 14</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2027-01-14-1">15:00 - 18:00 ⚠️ <strong>Examen Final:</strong> Sistemes de Bases de Dades (Aula C1)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2027-01-18">
+      <td>Dl 18</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2027-01-18-1">09:00 - 12:00 ⚠️ <strong>Examen Final:</strong> Xarxes de Computadors (Aula B1)</li>
+        </ul>
+      </td>
+    </tr>
+    <tr data-day="2027-01-22">
+      <td>Dv 22</td>
+      <td>
+        <ul class="tasks">
+          <li data-id="2027-01-22-1">15:00 - 18:00 ⚠️ <strong>Examen Final:</strong> Enginyeria del Software (Aula A2)</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="8-checklists-del-dia-abans">8. Checklists del dia abans</h2>
+<p><strong>MD — Matemàtiques Discretes:</strong> Repàs essencial la tarda anterior</p>
+<ul>
+  <li>Verificar cas base i hipòtesi d'inducció forta</li>
+  <li>Principi d'inclusió-exclusió i funcions generatrius bàsiques</li>
+  <li>Condicions necessàries i suficients de camins eulerians</li>
+</ul>
+
+<p><strong>AP — Algorismes i Programació:</strong> Control de qualitat abans del final</p>
+<ul>
+  <li>Complexitats de recorreguts BFS, DFS, Dijkstra i programació dinàmica</li>
+  <li>Gestió de casos base en funcions recursives i arbres buits</li>
+  <li>Poda bàsica en problemes de cerca amb backtracking</li>
+</ul>
+
+<p><strong>BD — Sistemes de Bases de Dades:</strong> Punts crítics d'examen</p>
+<ul>
+  <li>Ordre d'execució SQL (FROM → WHERE → GROUP BY → HAVING → SELECT)</li>
+  <li>Claus candidates, formes normals i dependències funcionals</li>
+  <li>Propietats ACID i anomalies de concurrència (lectura bruta, fantasma)</li>
+</ul>
+
+<p><strong>XC — Xarxes de Computadors:</strong> Fórmules i diagrames</p>
+<ul>
+  <li>Càlcul de màscares de subxarxa CIDR i taules d'encaminament</li>
+  <li>Màquina d'estats TCP i càlcul d'amplada de banda útil</li>
+  <li>Diferències entre UDP, TCP i flux TLS</li>
+</ul>
+
+<p><strong>ES — Enginyeria del Software:</strong> Arquitectura i qualitat</p>
+<ul>
+  <li>Principis SOLID amb un exemple concret de cadascun</li>
+  <li>Diferències entre patrons Strategy, Observer i Decorator</li>
+  <li>Cobertura de proves unitàries vs proves d'integració</li>
+</ul>
+
+<h2 id="9-punts-de-control">9. Punts de control</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Quan</th>
+      <th>Què revisar</th>
+      <th>Acció si vas enrere</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>22/11 (final Setmana 1)</td>
+      <td>Entrega 1 de BD enviada i base d'inducció MD assentada</td>
+      <td>Moure tasques secundàries al cap de setmana amb el desplegable ⏩</td>
+    </tr>
+    <tr>
+      <td>06/12 (final Fase 1)</td>
+      <td>Pràctica 2 d'AP entregada i parcial MD superat</td>
+      <td>Prioritzar MD/AP als blocs de matí de la Fase 2</td>
+    </tr>
+    <tr>
+      <td>20/12 (final Fase 2)</td>
+      <td>Servidor de sòcols XC funcional i documentat</td>
+      <td>Reservar dos dies de repàs extra abans del Nadal</td>
+    </tr>
+    <tr>
+      <td>04/01 (arrencada Fase 3)</td>
+      <td>Simulacres reals complets de les 4 assignatures finals</td>
+      <td>Demanar a l'Assistent IA que reorganitzi els blocs pendents</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="prompt-replanificar">Prompt ràpid per replanificar amb IA</h3>
+<blockquote>Hola! Soc a dia [DATA] i porto pendents aquestes tasques: [LLISTA]. Reorganitza'm els pròxims 4 dies prioritzant les entregues urgents i mantenint blocs de 50 minuts sostenibles sense passar de les 23:00 h.</blockquote>
+</template>
+
+  <script id="state" type="application/json">{"done":["2026-11-16-1","2026-11-16-2","2026-11-17-1","2026-11-17-2"],"t":1795110000000}</script>
 
   <script id="app">
 (function(){
@@ -3885,38 +4312,9 @@ function setupDay(card){
     more.onclick=function(e){
       e.stopPropagation();
       var open=li.classList.contains('menu-open');
-      document.querySelectorAll('li.menu-open').forEach(function(x){
-        x.classList.remove('menu-open');
-        var m=x.querySelector('.task-menu');
-        if(m)m.classList.remove('open-up');
-      });
-      if(!open){
-        menu.classList.remove('open-up');
-        li.classList.add('menu-open');
-        var btnRect=more.getBoundingClientRect();
-        var menuRect=menu.getBoundingClientRect();
-        var menuH=menuRect.height||200;
-        var cardRect=card?card.getBoundingClientRect():null;
-        var safeBottom=window.innerHeight-(window.innerWidth<=860?92:20);
-        var spaceBelowViewport=safeBottom-btnRect.bottom;
-        var spaceBelowCard=cardRect?(cardRect.bottom-btnRect.bottom):spaceBelowViewport;
-        if((spaceBelowViewport<menuH+12||spaceBelowCard<menuH+12)&&btnRect.top>menuH+70){
-          menu.classList.add('open-up');
-        }
-      }
+      document.querySelectorAll('li.menu-open').forEach(function(x){x.classList.remove('menu-open');});
+      if(!open)li.classList.add('menu-open');
     };
-    if(!window.__taskMenuOutsideBound){
-      window.__taskMenuOutsideBound=true;
-      document.addEventListener('click',function(ev){
-        if(!ev.target.closest('.task-menu')&&!ev.target.closest('.task-more')){
-          document.querySelectorAll('li.menu-open').forEach(function(x){
-            x.classList.remove('menu-open');
-            var m=x.querySelector('.task-menu');
-            if(m)m.classList.remove('open-up');
-          });
-        }
-      });
-    }
     menu.querySelector('.tm-up').onclick=function(){li.classList.remove('menu-open');moveTaskOrder(id,'up');};
     menu.querySelector('.tm-down').onclick=function(){li.classList.remove('menu-open');moveTaskOrder(id,'down');};
     menu.querySelector('.tm-mv').onclick=function(){li.classList.remove('menu-open');openMove(li,id,card);};
@@ -4846,9 +5244,10 @@ function updateProgressWidget() {
 
   container.innerHTML = '';
   var phases = [
-    { num: '1', title: 'Fase 1: Repàs inicial i entregues', selector: 'h2[id*="fase-1"]' },
-    { num: '2', title: 'Fase 2: Pràctiques i parcials', selector: 'h2[id*="fase-2"]' },
-    { num: '3', title: 'Fase 3: Repàs i exàmens finals', selector: 'h2[id*="fase-3"]' }
+    { num: '1', title: 'Fase 1: Entregues i temari (16/11–6/12)', selector: 'h2[id*="fase-1"]' },
+    { num: '2', title: 'Fase 2: Pràctiques i parcials (7–22/12)', selector: 'h2[id*="fase-2"]' },
+    { num: '3', title: 'Fase 3: Repàs i simulacres (23/12–10/01)', selector: 'h2[id*="fase-3"]' },
+    { num: '4', title: 'Fase 4: Sprint final d\'exàmens (11–22/01)', selector: 'h2[id*="sprint"]' }
   ];
 
   phases.forEach(function(ph) {
@@ -4944,11 +5343,19 @@ function openIndexModal() {
   overlay.className = 'index-modal-overlay';
 
   var sections = [
-    { id: 'today-shortcut', title: "Agenda d'avui (Dia actual)", icon: '📌', sub: 'Salta directament a les tasques d\'avui', view: 'today' },
-    { id: 'assignatures', title: 'Assignatures del Semestre', icon: '📚', sub: 'Resum de matèries, crèdits i objectius', view: 'exams' },
-    { id: 'planning-setmanal', title: 'Calendari Setmanal de Tasques', icon: '📅', sub: 'Planificació dia a dia del semestre', view: 'plan' },
-    { id: 'lliuraments', title: 'Lliuraments i Dates Clau', icon: '⚠️', sub: 'Entregues importants i fites del curs', view: 'plan' },
-    { id: 'examens', title: "Calendari d'Exàmens Finals", icon: '📝', sub: 'Dates d\'exàmens finals i avaluacions', view: 'exams' }
+    { id: 'today-shortcut', title: "Agenda d'avui (Dia actual)", icon: '📌', sub: 'Salta directament a les tasques d\'avui', view: 'plan' },
+    { id: '0-situacio-i-objectius', title: '0. Situació i objectius', icon: '🎯', sub: 'Assignatures, notes, fórmules i objectius de seguretat', view: 'exams' },
+    { id: '1-metodologia-destudi', title: '1. Metodologia d\'estudi', icon: '📘', sub: 'Blocs 50/10, simulacres i repàs lleuger', view: 'guide' },
+    { id: '2-horari-setmanal', title: '2. Horari setmanal', icon: '⏰', sub: 'Graella visual de classes, feina i blocs d\'estudi', view: 'guide' },
+    { id: '3-regles-del-pla', title: '3. Regles del pla', icon: '⚖️', sub: 'Compromisos bàsics per mantenir el ritme', view: 'guide' },
+    { id: 'setmana-1-162211', title: '4. Fase 1 · Setmana 1 (16–22/11)', icon: '🚀', sub: 'Arrencada de temari i primeres entregues', view: 'plan' },
+    { id: 'setmana-2-232911', title: '4. Fase 1 · Setmana 2 (23–29/11)', icon: '📅', sub: 'Preparació de parcial i pràctiques clau', view: 'plan' },
+    { id: 'setmana-3-3011612', title: '4. Fase 1 · Setmana 3 (30/11–6/12)', icon: '📅', sub: 'Consolidació de blocs i lliuraments', view: 'plan' },
+    { id: '5-fase-2', title: '5. Fase 2 · Pràctiques i parcials (7–22/12)', icon: '⚡', sub: 'Segona meitat del quadrimestre i projecte', view: 'plan' },
+    { id: '6-fase-3', title: '6. Fase 3 · Repàs i simulacres (23/12–10/01)', icon: '❄️', sub: 'Repàs general i simulacres cronometrats', view: 'plan' },
+    { id: '7-sprint-final', title: '7. Sprint Final · Exàmens finals (11–22/01)', icon: '🏁', sub: 'Recta final dia a dia d\'exàmens', view: 'plan' },
+    { id: '8-checklists-del-dia-abans', title: '8. Checklists del dia abans', icon: '📋', sub: 'Fórmules, material i passos previs per examen', view: 'checks' },
+    { id: '9-punts-de-control', title: '9. Punts de control', icon: '🚩', sub: 'Revisions setmanals i prompt de replanificació', view: 'control' }
   ];
 
   var itemsHtml = sections.map(function(s) {
@@ -5703,7 +6110,7 @@ function showLogin(){
   loginBox.innerHTML = '<div class="login-card">' +
     '<div class="login-icon">🔒</div>' +
     '<h2>Accés al Planning</h2>' +
-    '<p>Introdueix el PIN o contrasenya per accedir al teu planning de finals.</p>' +
+    '<p>Introdueix el PIN d\'accés (demo: <strong>study2026</strong>) per entrar al teu planning.</p>' +
     '<div class="login-field">' +
       '<input type="password" id="loginPass" placeholder="PIN d\'accés..." autocomplete="current-password" />' +
     '</div>' +
