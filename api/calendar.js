@@ -1,5 +1,5 @@
 const GH_TOKEN = process.env.GH_TOKEN;
-const REPO = process.env.GH_REPO || 'hirasheiikh/smart-study-assistant';
+const REPO = process.env.GH_REPO || 'your-username/smart-study-assistant';
 
 function decodeEntities(str) {
   if (!str) return '';
@@ -99,13 +99,17 @@ module.exports = async (req, res) => {
     const events = [];
     const nowIso = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
-    const rowRegex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>.*?<td>(.*?)<\/td>.*?<td><ul class="tasks">(.*?)<\/ul><\/td>.*?<\/tr>/gs;
+    const rowRegex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>(.*?)<\/tr>/gs;
     let rowMatch;
 
     while ((rowMatch = rowRegex.exec(html)) !== null) {
       const day = rowMatch[1];
-      const dayLabel = rowMatch[2].replace(/<[^>]+>/g, '').trim();
-      const tasksHtml = rowMatch[3];
+      const rowBody = rowMatch[2];
+      const ulMatch = rowBody.match(/<ul class="tasks">(.*?)<\/ul>/s);
+      if (!ulMatch) continue;
+      const dayColMatch = rowBody.match(/<td[^>]*class="day-col"[^>]*>(.*?)<\/td>/s) || rowBody.match(/<td[^>]*>(.*?)<\/td>/s);
+      const dayLabel = dayColMatch ? dayColMatch[1].replace(/<[^>]+>/g, '').trim() : day;
+      const tasksHtml = ulMatch[1];
 
       const liRegex = /<li([^>]*)>(.*?)<\/li>/gs;
       let liMatch;
@@ -121,7 +125,11 @@ module.exports = async (req, res) => {
         if (isMovedAway || !taskId) continue;
 
         const isDone = doneSet.has(taskId);
-        const cleanText = decodeEntities(rawContent.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+        const cleanText = decodeEntities(
+          rawContent
+            .replace(/<span class="cal-sync"[^>]*>.*?<\/span>/gi, '')
+            .replace(/<[^>]+>/g, '')
+        ).replace(/\s+/g, ' ').trim();
         const timeRange = parseTimeRange(cleanText);
 
         const summaryPrefix = isDone ? '✅ ' : '▫️ ';
@@ -142,6 +150,11 @@ module.exports = async (req, res) => {
             `SUMMARY:${summary}`,
             `DESCRIPTION:${description}`,
             `STATUS:${isDone ? 'CONFIRMED' : 'TENTATIVE'}`,
+            'BEGIN:VALARM',
+            'ACTION:DISPLAY',
+            `DESCRIPTION:${escapeIcsText('Recordatori (30 min): ' + cleanText)}`,
+            'TRIGGER:-PT30M',
+            'END:VALARM',
             'END:VEVENT'
           ]);
         } else {
@@ -173,7 +186,9 @@ module.exports = async (req, res) => {
       'METHOD:PUBLISH',
       'X-WR-CALNAME:Smart Study Planner',
       'X-WR-TIMEZONE:Europe/Madrid',
-      'X-WR-CALDESC:Sincronització en viu del calendari i tasques d\'estudi'
+      'X-WR-CALDESC:Sincronització en viu del calendari i tasques d\'estudi',
+      'REFRESH-INTERVAL;VALUE=DURATION:PT15M',
+      'X-PUBLISHED-TTL:PT15M'
     ];
 
     events.forEach(ev => {
@@ -186,7 +201,7 @@ module.exports = async (req, res) => {
 
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
     res.setHeader('Content-Disposition', 'inline; filename="study-planner.ics"');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=600');
     res.status(200).send(icsContent);
 
   } catch (err) {

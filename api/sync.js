@@ -1,5 +1,5 @@
 const GH_TOKEN = process.env.GH_TOKEN;
-const REPO = process.env.GH_REPO || 'hirasheiikh/smart-study-assistant';
+const REPO = process.env.GH_REPO || 'your-username/smart-study-assistant';
 
 function decodeEntities(str) {
   if (!str) return '';
@@ -53,10 +53,14 @@ module.exports = async (req, res) => {
       const stateMatch = content.match(/<script id="state"[^>]*>(.*?)<\/script>/s);
       let state = { done: [], t: Date.now() };
       if (stateMatch) {
-        try { state = JSON.parse(stateMatch[1]); } catch(e){}
+        try { state = JSON.parse(stateMatch[1]); } catch (e) {}
       }
       const tplMatch = content.match(/<template id="content">(.*?)<\/template>/s);
       let tplHtml = tplMatch ? tplMatch[1] : '';
+
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
 
       return res.status(200).json({
         ok: true,
@@ -103,10 +107,12 @@ module.exports = async (req, res) => {
         let doneSet = new Set(state.done || []);
         if (done) doneSet.add(taskId);
         else doneSet.delete(taskId);
-        const newState = JSON.stringify({ done: Array.from(doneSet), t: Date.now() });
+        state.done = Array.from(doneSet);
+        state.t = Date.now();
+        const newState = JSON.stringify(state).replace(/</g, '\\u003c');
         updated = updated.replace(/<script id="state"[^>]*>.*?<\/script>/s, `<script id="state" type="application/json">${newState}</script>`);
         await saveGitHubFile(updated, sha, `Web sync: Toggle ${taskId} (${done ? 'done' : 'undone'})`);
-        return res.status(200).json({ ok: true, state: JSON.parse(newState) });
+        return res.status(200).json({ ok: true, state: state });
       }
     }
 
@@ -165,10 +171,10 @@ module.exports = async (req, res) => {
             if (Array.isArray(state.done) && state.done.includes(taskId)) {
               state.done = state.done.filter(id => id !== taskId);
               state.t = Date.now();
-              const newState = JSON.stringify(state);
+              const newState = JSON.stringify(state).replace(/</g, '\\u003c');
               updated = updated.replace(/<script id="state"[^>]*>.*?<\/script>/s, `<script id="state" type="application/json">${newState}</script>`);
             }
-          } catch(e) {}
+          } catch (e) {}
         }
 
         await saveGitHubFile(updated, sha, `Web sync: Delete task ${taskId}`);

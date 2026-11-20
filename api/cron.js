@@ -1,11 +1,17 @@
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const GH_TOKEN = process.env.GH_TOKEN;
-const REPO = process.env.GH_REPO || 'hirasheiikh/smart-study-assistant';
+const REPO = process.env.GH_REPO || 'your-username/smart-study-assistant';
+const WEB_URL = process.env.APP_URL || 'https://your-planner.vercel.app';
 
 function getMadridDate() {
   const now = new Date();
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Madrid',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(now);
 }
 
 function decodeEntities(str) {
@@ -33,7 +39,7 @@ async function getGitHubFile() {
     headers: {
       'Authorization': `Bearer ${GH_TOKEN}`,
       'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'SmartStudyBot'
+      'User-Agent': 'SmartStudyCron'
     }
   });
   if (!res.ok) throw new Error(`GitHub get failed: ${res.status}`);
@@ -53,7 +59,7 @@ module.exports = async (req, res) => {
       try {
         const state = JSON.parse(stateMatch[1]);
         (state.done || []).forEach(d => doneSet.add(d));
-      } catch(e) {}
+      } catch (e) {}
     }
 
     const todayStr = getMadridDate();
@@ -61,22 +67,33 @@ module.exports = async (req, res) => {
     const yestDt = new Date(todayDt.getTime() - 86400000);
     const yestStr = yestDt.toISOString().slice(0, 10);
 
-    const rowRegex = /<tr[^>]*data-day="([^"]+)"[^>]*>.*?<td>(.*?)<\/td>.*?<td><ul class="tasks">(.*?)<\/ul><\/td>.*?<\/tr>/gs;
+    const rowRegex = /<tr[^>]*data-day="([^"]+)"[^>]*>(.*?)<\/tr>/gs;
     let m;
     let todayTasks = [];
-    let todayLabel = '';
+    let todayDone = [];
+    let todayPending = [];
+    let todayNotes = [];
+    let todayLabel = todayStr;
     let yestPending = [];
 
     while ((m = rowRegex.exec(content)) !== null) {
       const day = m[1];
-      const label = m[2].replace(/<[^>]+>/g, '').trim();
-      const tasksHtml = m[3];
+      const rowBody = m[2];
+      const ulMatch = rowBody.match(/<ul class="tasks">(.*?)<\/ul>/s);
+      if (!ulMatch) continue;
+      const dayColMatch = rowBody.match(/<td[^>]*class="day-col"[^>]*>(.*?)<\/td>/s) || rowBody.match(/<td[^>]*>(.*?)<\/td>/s);
+      const label = dayColMatch ? dayColMatch[1].replace(/<[^>]+>/g, '').trim() : day;
+      const tasksHtml = ulMatch[1];
 
       const liRegex = /<li([^>]*)>(.*?)<\/li>/gs;
       let li;
       while ((li = liRegex.exec(tasksHtml)) !== null) {
         const attrs = li[1];
-        const inner = decodeEntities(li[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+        const inner = decodeEntities(
+          li[2]
+            .replace(/<span class="cal-sync"[^>]*>.*?<\/span>/gi, '')
+            .replace(/<[^>]+>/g, '')
+        ).replace(/\s+/g, ' ').trim();
         const idMatch = attrs.match(/data-id="([^"]+)"/);
         const id = idMatch ? idMatch[1] : '';
         const isNote = attrs.includes('note');
@@ -86,9 +103,15 @@ module.exports = async (req, res) => {
           todayLabel = label;
           if (isNote) {
             todayTasks.push('  ℹ️ _' + inner + '_');
+            todayNotes.push('  ℹ️ _' + inner + '_');
           } else if (!isMovedAway && id) {
-            const mark = doneSet.has(id) ? '✅' : '▫️';
-            todayTasks.push(mark + ' ' + inner);
+            if (doneSet.has(id)) {
+              todayTasks.push('✅ ' + inner);
+              todayDone.push('✅ ' + inner);
+            } else {
+              todayTasks.push('▫️ ' + inner);
+              todayPending.push('▫️ ' + inner);
+            }
           }
         }
 
@@ -102,7 +125,7 @@ module.exports = async (req, res) => {
 
     if (mode === 'morning') {
       const lines = [];
-      lines.push(`📅 *Pla d'estudi: ${todayLabel || todayStr} (${todayStr})*`);
+      lines.push(`📅 *Pla d'estudi: ${todayLabel} (${todayStr})*`);
       lines.push('');
       if (yestPending.length > 0) {
         lines.push('⏳ *Pendent d\'ahir:*');
@@ -115,22 +138,37 @@ module.exports = async (req, res) => {
       } else {
         lines.push('_No hi ha tasques programades per avui._');
       }
+      lines.push('');
+      lines.push(`🌐 *Obre el planner:* ${WEB_URL}`);
       await sendTelegram(lines.join('\n'));
       return res.status(200).send('Morning notification sent');
     } else {
       const lines = [];
-      lines.push(`🌙 *Revisió de final de dia · ${todayLabel || todayStr} (${todayStr})*`);
+      const totalToday = todayDone.length + todayPending.length;
+      lines.push(`🌙 *Resum del dia · ${todayLabel} (${todayStr})*`);
       lines.push('');
-      lines.push('Bona nit! Com ha anat la jornada d\'avui?');
-      lines.push('Aquest era el teu pla:');
+      lines.push(`📊 *Progrés:* ${todayDone.length} de ${totalToday} tasques completades`);
       lines.push('');
-      if (todayTasks.length > 0) {
-        lines.push(...todayTasks);
+      lines.push('✅ *Fet avui:*');
+      if (todayDone.length > 0) {
+        lines.push(...todayDone);
       } else {
-        lines.push('_No hi havia tasques específiques per avui._');
+        lines.push('_Cap tasca marcada com a feta encara._');
       }
       lines.push('');
-      lines.push('💬 *Respon directament a aquest missatge* dient-me què has pogut fer (o què vols moure a demà) i t\'ho actualitzaré a la web i al calendari!');
+      lines.push('⏳ *Pendent d\'avui:*');
+      if (todayPending.length > 0) {
+        lines.push(...todayPending);
+      } else {
+        lines.push('🎉 *Tot completat avui! Bona feina!*');
+      }
+      if (todayNotes.length > 0) {
+        lines.push('');
+        lines.push(...todayNotes);
+      }
+      lines.push('');
+      lines.push('✨ *Obre el planner per marcar tasques o reorganitzar amb l\'assistent:*');
+      lines.push(WEB_URL);
       await sendTelegram(lines.join('\n'));
       return res.status(200).send('Evening notification sent');
     }

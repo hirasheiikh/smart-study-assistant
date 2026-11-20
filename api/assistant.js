@@ -1,6 +1,6 @@
 const GH_TOKEN = process.env.GH_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const REPO = process.env.GH_REPO || 'hirasheiikh/smart-study-assistant';
+const REPO = process.env.GH_REPO || 'your-username/smart-study-assistant';
 
 function decodeEntities(str) {
   if (!str) return '';
@@ -103,6 +103,15 @@ function updateState(content, newState) {
   return content.replace(/<script id="state"[^>]*>(.*?)<\/script>/s, `<script id="state" type="application/json">${jsonStr}</script>`);
 }
 
+function stripTaskHtml(raw) {
+  if (!raw) return '';
+  return decodeEntities(
+    raw
+      .replace(/<span class="cal-sync"[^>]*>.*?<\/span>/gi, '')
+      .replace(/<[^>]+>/g, '')
+  ).replace(/\s+/g, ' ').trim();
+}
+
 function parseAllTasks(content) {
   const all = [];
   const rowRegex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>(.*?)<\/tr>/gs;
@@ -115,24 +124,33 @@ function parseAllTasks(content) {
     while ((tm = taskRegex.exec(rowContent)) !== null) {
       const id = tm[1];
       const raw = tm[3];
-      const text = decodeEntities(raw.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+      const text = stripTaskHtml(raw);
       all.push({ day, id, text, raw });
     }
   }
   return all;
 }
 
+function extractRowFields(rowBody, fallbackLabel) {
+  const ulMatch = rowBody.match(/<ul class="tasks">(.*?)<\/ul>/s);
+  if (!ulMatch) return null;
+  const dayColMatch = rowBody.match(/<td[^>]*class="day-col"[^>]*>(.*?)<\/td>/s) || rowBody.match(/<td[^>]*>(.*?)<\/td>/s);
+  const dayLabel = dayColMatch ? dayColMatch[1].replace(/<[^>]+>/g, '').trim() : fallbackLabel;
+  return { dayLabel, tasksHtml: ulMatch[1] };
+}
+
 function getUpcomingScheduleOverview(content, fromDateStr, daysCount = 30) {
   const state = getState(content);
   const doneSet = new Set(Array.isArray(state.done) ? state.done : []);
   const allDays = [];
-  const regex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>.*?<td>(.*?)<\/td>.*?<td><ul class="tasks">(.*?)<\/ul><\/td>.*?<\/tr>/gs;
+  const regex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>(.*?)<\/tr>/gs;
   let m;
 
   while ((m = regex.exec(content)) !== null) {
     const day = m[1];
-    const dayLabel = m[2].replace(/<[^>]+>/g, '').trim();
-    const tasksHtml = m[3];
+    const parsed = extractRowFields(m[2], day);
+    if (!parsed) continue;
+    const { dayLabel, tasksHtml } = parsed;
 
     const tasks = [];
     const liRegex = /<li([^>]*)>(.*?)<\/li>/gs;
@@ -146,7 +164,7 @@ function getUpcomingScheduleOverview(content, fromDateStr, daysCount = 30) {
       const isMovedAway = attrs.includes('movedaway');
 
       if (!isMovedAway && id) {
-        const text = decodeEntities(raw.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+        const text = stripTaskHtml(raw);
         const isDone = doneSet.has(id);
         const isWork = text.toLowerCase().includes('feina');
         tasks.push({ id, text, isDone, isWork, isNote });
@@ -178,15 +196,16 @@ function getOverdueTasks(content, todayDateStr) {
   const state = getState(content);
   const doneSet = new Set(Array.isArray(state.done) ? state.done : []);
   const overdue = [];
-  const regex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>.*?<td>(.*?)<\/td>.*?<td><ul class="tasks">(.*?)<\/ul><\/td>.*?<\/tr>/gs;
+  const regex = /<tr[^>]*data-day="(\d{4}-\d{2}-\d{2})"[^>]*>(.*?)<\/tr>/gs;
   let m;
 
   while ((m = regex.exec(content)) !== null) {
     const day = m[1];
     if (day >= todayDateStr) continue;
 
-    const dayLabel = m[2].replace(/<[^>]+>/g, '').trim();
-    const tasksHtml = m[3];
+    const parsed = extractRowFields(m[2], day);
+    if (!parsed) continue;
+    const { dayLabel, tasksHtml } = parsed;
     const liRegex = /<li([^>]*)>(.*?)<\/li>/gs;
     let li;
     while ((li = liRegex.exec(tasksHtml)) !== null) {
@@ -197,7 +216,7 @@ function getOverdueTasks(content, todayDateStr) {
       const isMovedAway = attrs.includes('movedaway');
 
       if (!isMovedAway && id && !doneSet.has(id)) {
-        const text = decodeEntities(raw.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+        const text = stripTaskHtml(raw);
         overdue.push(`- ${day} (${dayLabel}): "${text}" (id: ${id})`);
       }
     }
@@ -210,12 +229,11 @@ function getOverdueTasks(content, todayDateStr) {
 function executeActionBatch(content, actions) {
   let updated = content;
   const log = [];
-  const allTasks = parseAllTasks(content);
 
   for (const act of actions) {
     if (!act || !act.type) continue;
 
-    if (act.type === 'add') {
+    if (act.type === 'add' || act.type === 'add_task') {
       const day = act.day;
       const text = cleanTaskTitle(act.text);
       const isWork = Boolean(act.is_work);
@@ -223,8 +241,8 @@ function executeActionBatch(content, actions) {
 
       const newId = `${day}-${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 90 + 10)}`;
       const taskHtml = isWork
-        ? `<li data-id="${newId}">💼 <strong>Feina:</strong> ${text}</li>`
-        : `<li data-id="${newId}">${text}</li>`;
+        ? `<li data-id="${newId}">💼 <strong>Feina:</strong> ${text}<span class="cal-sync" style="display:none">⚠️</span></li>`
+        : `<li data-id="${newId}">${text}<span class="cal-sync" style="display:none">⚠️</span></li>`;
 
       const rowRegex = new RegExp(`(<tr[^>]*data-day="${day}"[^>]*>.*?<ul class="tasks">)(.*?)(</ul>)`, 's');
       if (updated.match(rowRegex)) {
@@ -233,11 +251,12 @@ function executeActionBatch(content, actions) {
       }
     }
 
-    else if (act.type === 'move') {
-      const query = (act.query || '').toLowerCase().trim();
-      const targetDate = act.target_date;
+    else if (act.type === 'move' || act.type === 'move_task') {
+      const query = (act.query || act.text || '').toLowerCase().trim();
+      const targetDate = act.target_date || act.toDay;
       if (!query || !targetDate) continue;
 
+      const allTasks = parseAllTasks(updated);
       const target = allTasks.find(t => t.text.toLowerCase().includes(query) && t.day !== targetDate);
       if (target) {
         const liRegex = new RegExp(`\\s*<li[^>]*data-id="${target.id}"[^>]*>.*?</li>`, 's');
@@ -252,11 +271,12 @@ function executeActionBatch(content, actions) {
       }
     }
 
-    else if (act.type === 'delete') {
-      const query = (act.query || '').toLowerCase().trim();
+    else if (act.type === 'delete' || act.type === 'delete_task') {
+      const query = (act.query || act.text || '').toLowerCase().trim();
       const day = act.day;
       if (!query) continue;
 
+      const allTasks = parseAllTasks(updated);
       const target = allTasks.find(t => {
         const matchText = t.text.toLowerCase().includes(query);
         return day ? (matchText && t.day === day) : matchText;
@@ -268,13 +288,66 @@ function executeActionBatch(content, actions) {
         log.push(`🗑️ Eliminada de ${target.day}: "${target.text}"`);
       }
     }
+
+    else if (act.type === 'edit' || act.type === 'edit_task') {
+      const query = (act.query || act.text || '').toLowerCase().trim();
+      if (!query) continue;
+
+      const allTasks = parseAllTasks(updated);
+      const target = allTasks.find(t => t.text.toLowerCase().includes(query));
+      if (target) {
+        let formatted = act.newText || act.text || target.raw;
+        if (act.is_urgent && !formatted.includes('⚠️')) {
+          formatted = `⚠️ <strong>${formatted.replace(/<\/?strong>/g, '').replace(/^⚠️\s*/, '')}</strong>`;
+        } else if (act.is_bold && !formatted.includes('<strong>')) {
+          formatted = `<strong>${formatted}</strong>`;
+        }
+        if (!formatted.includes('cal-sync')) {
+          formatted += '<span class="cal-sync" style="display:none">⚠️</span>';
+        }
+        const liRegex = new RegExp(`(<li\\s+data-id="${target.id}"[^>]*>)(.*?)(</li>)`, 's');
+        if (updated.match(liRegex)) {
+          updated = updated.replace(liRegex, `$1${formatted}$3`);
+          log.push(`✏️ Modificada (${target.day}): "${target.text}"`);
+        }
+      }
+    }
   }
 
   return { updatedContent: updated, log };
 }
 
+function safeParseGeminiJson(txt) {
+  if (!txt) return null;
+  let clean = txt.trim();
+  clean = clean.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+  try {
+    return JSON.parse(clean);
+  } catch (err) {
+    const jsonMatch = clean.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (e2) {}
+    }
+    const replyMatch = clean.match(/"reply"\s*:\s*"([\s\S]*?)(?:"\s*,\s*"has_actions|"\s*\})/);
+    if (replyMatch) {
+      return {
+        reply: replyMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"'),
+        has_actions: false,
+        actions: []
+      };
+    }
+    return { reply: clean, has_actions: false, actions: [] };
+  }
+}
+
 async function callGeminiAssistant(userMessage, conversationHistory, temporalContext, scheduleContext, overdueContext) {
-  if (!GEMINI_API_KEY) return null;
+  if (!GEMINI_API_KEY) {
+    console.error('GEMINI_API_KEY missing');
+    return null;
+  }
 
   const { nowDateTime, weekdayName, todayDate, tomorrowStr, dayAfterTomorrowStr } = temporalContext;
 
@@ -315,6 +388,7 @@ Pots proposar canvis que l'app aplicarà quan l'usuari cliqui "Confirmar". Tipus
 - add: afegir una tasca -> { "type": "add", "day": "YYYY-MM-DD", "text": "...", "is_work": true|false }
 - move: moure una tasca existent -> { "type": "move", "query": "text identificatiu de la tasca", "target_date": "YYYY-MM-DD" }
 - delete: esborrar una tasca existent -> { "type": "delete", "query": "text identificatiu de la tasca", "day": "YYYY-MM-DD" }
+- edit: modificar o destacar una tasca -> { "type": "edit", "query": "text identificatiu de la tasca", "newText": "nou text", "is_urgent": true|false, "is_bold": true|false }
 
 Regles:
 1. Només generes accions quan l'usuari demana un canvi, ja sigui explícitament ("mou-ho", "apunta'm", "treu això") o implícitament però clarament ("posa'm el metge dilluns", "això ja no cal que ho faci"). Si només pregunta o pensa en veu alta, proposa-ho en el text i pregunta si vol que ho apliquis.
@@ -336,34 +410,73 @@ Si no hi ha canvis: "has_actions": false, "actions": [], "summary": null.`;
 
   const contents = [];
   if (Array.isArray(conversationHistory)) {
-    for (const h of conversationHistory.slice(-16)) {
-      if (h.role && h.text) {
-        contents.push({
-          role: h.role === 'assistant' || h.role === 'model' ? 'model' : 'user',
-          parts: [{ text: h.text }]
-        });
+    const sliced = conversationHistory.slice(-12);
+    for (const h of sliced) {
+      const role = (h.role === 'model' || h.role === 'assistant') ? 'model' : 'user';
+      let text = typeof h.text === 'string' ? h.text : '';
+      if (!text && h.parts && h.parts[0]) text = h.parts[0].text || '';
+
+      if (role === 'model' && text.startsWith('{') && text.includes('"reply"')) {
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed.reply) text = parsed.reply;
+        } catch (e) {}
+      }
+
+      const cleanText = text.trim();
+      if (cleanText) {
+        if (contents.length > 0 && contents[contents.length - 1].role === role) {
+          contents[contents.length - 1].parts[0].text += '\n\n' + cleanText;
+        } else {
+          contents.push({ role, parts: [{ text: cleanText }] });
+        }
       }
     }
   }
-  contents.push({
-    role: 'user',
-    parts: [{ text: userMessage }]
-  });
 
-  const models = ['gemini-2.5-flash', 'gemini-3-flash-preview', 'gemini-flash-lite-latest', 'gemini-pro-latest'];
+  const currentUserText = userMessage.trim();
+  if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+    if (contents[contents.length - 1].parts[0].text !== currentUserText) {
+      contents.push({ role: 'model', parts: [{ text: 'Entès.' }] });
+      contents.push({ role: 'user', parts: [{ text: currentUserText }] });
+    }
+  } else {
+    contents.push({ role: 'user', parts: [{ text: currentUserText }] });
+  }
 
-  for (const model of models) {
+  while (contents.length > 0 && contents[0].role !== 'user') {
+    contents.shift();
+  }
+
+  const modelCandidates = [
+    { id: 'gemini-2.5-flash', disableThinking: true, timeoutMs: 10000 },
+    { id: 'gemini-2.5-flash-lite', disableThinking: true, timeoutMs: 8000 },
+    { id: 'gemini-flash-lite-latest', disableThinking: false, timeoutMs: 8000 },
+    { id: 'gemini-flash-latest', disableThinking: false, timeoutMs: 10000 }
+  ];
+
+  const errors = [];
+  for (const candidate of modelCandidates) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), candidate.timeoutMs);
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${candidate.id}:generateContent?key=${GEMINI_API_KEY}`;
+      const generationConfig = {
+        responseMimeType: 'application/json',
+        temperature: 0.4,
+        maxOutputTokens: 1024
+      };
+      if (candidate.disableThinking) {
+        generationConfig.thinkingConfig = { thinkingBudget: 0 };
+      }
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           contents: contents,
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: {
-            responseMimeType: 'application/json'
-          }
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          generationConfig
         })
       });
 
@@ -371,14 +484,24 @@ Si no hi ha canvis: "has_actions": false, "actions": [], "summary": null.`;
         const json = await res.json();
         const txt = json.candidates?.[0]?.content?.parts?.[0]?.text;
         if (txt) {
-          const parsed = JSON.parse(txt);
-          return parsed;
+          const parsed = safeParseGeminiJson(txt);
+          if (parsed) return parsed;
         }
+      } else {
+        const err = await res.text().catch(() => '');
+        const msg = `${candidate.id} (HTTP ${res.status}): ${err.slice(0, 200)}`;
+        errors.push(msg);
+        console.warn(msg);
       }
     } catch (e) {
-      console.warn(`Model ${model} failed, trying next:`, e.message);
+      const msg = `${candidate.id} (${e.name === 'AbortError' ? 'Timeout' : 'Exception'}): ${e.message}`;
+      errors.push(msg);
+      console.warn(msg);
+    } finally {
+      clearTimeout(timer);
     }
   }
+  console.error('All Gemini models failed:', errors.join(' | '));
   return null;
 }
 
@@ -420,7 +543,7 @@ module.exports = async (req, res) => {
 
     const temporalContext = getMadridDateDetails();
     const { content } = await getGitHubFile();
-    const upcomingSchedule = getUpcomingScheduleOverview(content, temporalContext.todayDate, 45);
+    const upcomingSchedule = getUpcomingScheduleOverview(content, temporalContext.todayDate, 30);
     const overdueContext = getOverdueTasks(content, temporalContext.todayDate);
 
     const result = await callGeminiAssistant(message, history, temporalContext, upcomingSchedule, overdueContext);
