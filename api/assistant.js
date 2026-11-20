@@ -408,6 +408,10 @@ Respon sempre amb un únic objecte JSON vàlid, sense text fora del JSON ni bloc
 }
 Si no hi ha canvis: "has_actions": false, "actions": [], "summary": null.`;
 
+  const isTransientFallback = (t) =>
+    /He tingut un petit problema momentani de connexi/i.test(t) ||
+    /^(?:⚠️|⏱️)\s*(?:Hi ha hagut un error|L'assistent ha trigat)/i.test(t);
+
   const contents = [];
   if (Array.isArray(conversationHistory)) {
     const sliced = conversationHistory.slice(-12);
@@ -425,6 +429,7 @@ Si no hi ha canvis: "has_actions": false, "actions": [], "summary": null.`;
 
       const cleanText = text.trim();
       if (cleanText) {
+        if (role === 'model' && isTransientFallback(cleanText)) continue;
         if (contents.length > 0 && contents[contents.length - 1].role === role) {
           contents[contents.length - 1].parts[0].text += '\n\n' + cleanText;
         } else {
@@ -449,25 +454,34 @@ Si no hi ha canvis: "has_actions": false, "actions": [], "summary": null.`;
   }
 
   const modelCandidates = [
-    { id: 'gemini-2.5-flash', disableThinking: true, timeoutMs: 10000 },
-    { id: 'gemini-2.5-flash-lite', disableThinking: true, timeoutMs: 8000 },
-    { id: 'gemini-flash-lite-latest', disableThinking: false, timeoutMs: 8000 },
-    { id: 'gemini-flash-latest', disableThinking: false, timeoutMs: 10000 }
+    { id: 'gemini-3.1-flash-lite-preview', thinkingConfig: { thinkingLevel: 'MINIMAL' }, timeoutMs: 7000 },
+    { id: 'gemini-3.5-flash-lite', thinkingConfig: { thinkingLevel: 'MINIMAL' }, timeoutMs: 7000 },
+    { id: 'gemini-3.1-flash-lite', thinkingConfig: { thinkingLevel: 'MINIMAL' }, timeoutMs: 7000 },
+    { id: 'gemini-flash-lite-latest', thinkingConfig: { thinkingLevel: 'MINIMAL' }, timeoutMs: 8000 },
+    { id: 'gemini-3.6-flash', thinkingConfig: { thinkingLevel: 'MINIMAL' }, timeoutMs: 8000 },
+    { id: 'gemini-flash-latest', thinkingConfig: { thinkingLevel: 'LOW' }, timeoutMs: 8000 }
   ];
 
   const errors = [];
-  for (const candidate of modelCandidates) {
+  const overallDeadline = Date.now() + 22000;
+
+  async function attemptCandidate(candidate, useThinkingConfig) {
+    const remaining = overallDeadline - Date.now();
+    if (remaining < 1800) {
+      return { abortAll: true, result: null };
+    }
+    const timeoutMs = Math.min(candidate.timeoutMs, remaining);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), candidate.timeoutMs);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${candidate.id}:generateContent?key=${GEMINI_API_KEY}`;
       const generationConfig = {
         responseMimeType: 'application/json',
         temperature: 0.4,
-        maxOutputTokens: 1024
+        maxOutputTokens: 2048
       };
-      if (candidate.disableThinking) {
-        generationConfig.thinkingConfig = { thinkingBudget: 0 };
+      if (useThinkingConfig && candidate.thinkingConfig) {
+        generationConfig.thinkingConfig = candidate.thinkingConfig;
       }
       const res = await fetch(url, {
         method: 'POST',
@@ -482,23 +496,54 @@ Si no hi ha canvis: "has_actions": false, "actions": [], "summary": null.`;
 
       if (res.ok) {
         const json = await res.json();
-        const txt = json.candidates?.[0]?.content?.parts?.[0]?.text;
+        const parts = json.candidates?.[0]?.content?.parts || [];
+        const txt = parts.filter(p => !p.thought && typeof p.text === 'string').map(p => p.text).join('').trim()
+                 || parts.filter(p => typeof p.text === 'string').map(p => p.text).join('').trim();
         if (txt) {
           const parsed = safeParseGeminiJson(txt);
-          if (parsed) return parsed;
+          if (parsed && typeof parsed.reply === 'string' && parsed.reply.trim()) {
+            return { result: { ...parsed, _model: candidate.id } };
+          }
+          const msg = `${candidate.id} (EmptyOrInvalidReply): ${txt.slice(0, 120)}`;
+          errors.push(msg);
+          console.warn(msg);
+        } else {
+          const msg = `${candidate.id} (EmptyParts)`;
+          errors.push(msg);
+          console.warn(msg);
         }
+        return { result: null };
       } else {
         const err = await res.text().catch(() => '');
         const msg = `${candidate.id} (HTTP ${res.status}): ${err.slice(0, 200)}`;
         errors.push(msg);
         console.warn(msg);
+        return { result: null, status: res.status, errBody: err };
       }
     } catch (e) {
       const msg = `${candidate.id} (${e.name === 'AbortError' ? 'Timeout' : 'Exception'}): ${e.message}`;
       errors.push(msg);
       console.warn(msg);
+      return { result: null };
     } finally {
       clearTimeout(timer);
+    }
+  }
+
+  for (const candidate of modelCandidates) {
+    if (overallDeadline - Date.now() < 1800) break;
+    const first = await attemptCandidate(candidate, true);
+    if (first.abortAll) break;
+    if (first.result) return first.result;
+    if (
+      first.status === 400 &&
+      candidate.thinkingConfig &&
+      /thinking/i.test(first.errBody || '') &&
+      (overallDeadline - Date.now() > 3500)
+    ) {
+      const retry = await attemptCandidate(candidate, false);
+      if (retry.abortAll) break;
+      if (retry.result) return retry.result;
     }
   }
   console.error('All Gemini models failed:', errors.join(' | '));
@@ -543,7 +588,7 @@ module.exports = async (req, res) => {
 
     const temporalContext = getMadridDateDetails();
     const { content } = await getGitHubFile();
-    const upcomingSchedule = getUpcomingScheduleOverview(content, temporalContext.todayDate, 30);
+    const upcomingSchedule = getUpcomingScheduleOverview(content, temporalContext.todayDate, 75);
     const overdueContext = getOverdueTasks(content, temporalContext.todayDate);
 
     const result = await callGeminiAssistant(message, history, temporalContext, upcomingSchedule, overdueContext);
@@ -553,7 +598,8 @@ module.exports = async (req, res) => {
         ok: true,
         reply: "Hola! He tingut un petit problema momentani de connexió amb Gemini. Torna-m'ho a demanar i t'ho responc al moment!",
         has_actions: false,
-        actions: []
+        actions: [],
+        is_fallback: true
       });
     }
 
@@ -562,7 +608,8 @@ module.exports = async (req, res) => {
       reply: result.reply,
       has_actions: Boolean(result.has_actions && result.actions && result.actions.length > 0),
       actions: result.actions || [],
-      summary: result.summary || null
+      summary: result.summary || null,
+      model: result._model
     });
 
   } catch (err) {
