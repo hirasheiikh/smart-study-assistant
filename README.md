@@ -18,6 +18,7 @@
 ---
 
 ## 📑 Table of Contents
+- [📸 Visual Preview (Screenshots)](#-visual-preview-screenshots)
 - [💡 The Story & Motivation](#-the-story--motivation)
 - [🏛️ System Architecture](#️-system-architecture)
 - [⚡ Core Capabilities & Intelligent Workflows](#-core-capabilities--intelligent-workflows)
@@ -28,8 +29,32 @@
   - [5. Universal Calendar Sync with Native 30-Min `VALARM` Alerts](#5--universal-calendar-sync-with-native-30-min-valarm-alerts)
   - [6. Design Choice: Why Telegram + Native Calendar Alerts instead of Web Push?](#6--design-choice-why-telegram--native-calendar-alerts-instead-of-web-push)
 - [🛠️ Tech Stack & Tooling](#️-tech-stack--tooling)
+- [🎨 Customization (Language, Colors, Subjects & PIN)](#-customization-language-colors-subjects--pin)
 - [🚀 Quick Setup & Deployment](#-quick-setup--deployment)
 - [📄 License](#-license)
+
+---
+
+## 📸 Visual Preview (Screenshots)
+
+> [!NOTE]
+> **Language & Full Customizability:** This public template comes written in **Catalan** by default (`<html lang="ca">`, UI labels, sample academic plan, Telegram briefings, and Gemini assistant prompts). Everything lives inside clean, self-contained HTML/CSS/JS files so **you can easily translate it into any language** (English, Spanish, French, etc.) and **customize the color palette, subjects, schedule, and PIN** to your liking—see [Customization](#-customization-language-colors-subjects--pin) below.
+
+### Today Dashboard (`Avui`)
+![Today Dashboard — Agenda d'avui, Progrés d'estudi i Mini Calendari](docs/screenshots/avui.png)
+
+### All Planner Views & AI Assistant
+| Daily Study Plan (`Pla`) | Exams & Risk Overview (`Exàmens`) |
+| :---: | :---: |
+| ![Daily Study Plan View](docs/screenshots/pla.png) | ![Exams and Risk Cards View](docs/screenshots/examens.png) |
+
+| Methodology & Timetable Grid (`Guia`) | Day-Before Checklists (`Checklists`) |
+| :---: | :---: |
+| ![Methodology and Timetable View](docs/screenshots/guia.png) | ![Day-Before Checklists View](docs/screenshots/checklists.png) |
+
+| Control Checkpoints & AI Prompt (`Punts de control`) | In-App Gemini Assistant Drawer |
+| :---: | :---: |
+| ![Checkpoints and Quick Prompt View](docs/screenshots/punts_control.png) | ![Floating In-App Gemini Assistant Drawer](docs/screenshots/assistent.png) |
 
 ---
 
@@ -146,6 +171,44 @@ True iOS Web Push notifications require installing the app via *«Add to Home Sc
 | **Persistence (GitOps)** | GitHub REST API v3 (Git-as-a-Database, atomic SHA-verified commits) |
 | **Calendar Standard** | RFC 5545 iCalendar dynamic feed (`/calendar.ics`) with 30-min `VALARM` triggers |
 | **Frontend Web** | Vanilla HTML5, CSS3 Custom Properties, `visualViewport` Mobile Chat UX, Web Crypto API |
+
+---
+
+<div align="right"><a href="#-autonomous-study-secretary--planner">↑ Back to Top</a></div>
+
+## 🎨 Customization (Language, Colors, Subjects & PIN)
+
+This template is designed to be adapted effortlessly without any build tools or framework overhead:
+
+### 🌐 Language (Default: Catalan)
+- The default UI, sample curriculum, AI assistant responses, and Telegram messages are in **Catalan**.
+- To switch to your preferred language:
+  - **`index.html`:** Update `<html lang="ca">`, `MONTH_NAMES`, `DAY_NAMES`, `VIEW_META`, UI labels/buttons inside `<script id="app">`, and the sample sections inside `<template id="content">`.
+  - **`api/assistant.js`:** Adjust the Gemini system prompt (`ca-ES` date formatting and reply language instructions).
+  - **`api/cron.js` & `api/telegram.js`:** Translate the morning/evening digest templates and bot commands (`/avui`, `/dema`, `/pendents`).
+
+### 🎨 Colors & Visual Theme
+Edit the CSS custom properties at the top of `<style id="css">` in `index.html`:
+
+```css
+:root {
+  --primary: #7B337E;          /* Accent purple */
+  --primary-dark: #210635;     /* Deep heading & text accent */
+  --primary-sapphire: #426bc2; /* Secondary blue accent */
+  --primary-light: #F5D5E0;    /* Soft highlight */
+  --bg-page: #FAF7F2;          /* Warm page canvas */
+  --fg: #210635;               /* Main text color */
+  --ok: #059669;               /* Completed / low-risk green */
+  --late: #f43f5e;             /* Overdue / high-risk alert */
+}
+#bar { background: #1a0827; }  /* Sidebar background */
+```
+
+### 📚 Subjects, Timetable & Tasks
+- Edit `<template id="content">` in `index.html` to replace the 5 sample subjects (**MD**, **AP**, **BD**, **XC**, **ES**), exam formulas, weekly timetable grid, and `<tr data-day="YYYY-MM-DD">` daily task rows.
+
+### 🔒 Access PIN
+- Demo PIN out of the box is **`study2026`**. Update the validation in `showLogin()` / `EXPECTED_HASH` inside `index.html` before deploying your personal instance.
 
 ---
 
