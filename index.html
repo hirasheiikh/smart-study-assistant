@@ -237,12 +237,14 @@ body {
 #main {
   margin-left: 256px;
   padding: 32px 42px 90px;
-  max-width: 1240px;
+  max-width: none;
   min-height: 100vh;
 }
 
 .view {
   display: none;
+  max-width: 2200px;
+  margin: 0 auto;
 }
 .view.active {
   display: block;
@@ -2611,6 +2613,47 @@ body.hide .chk-item.is-done {
 
 body.hide .week:not(:has(.day-card:not(.is-done))) {
   display: none !important;
+}
+
+/* ================= LARGE & ULTRAWIDE DESKTOP (24"+ MONITORS) ================= */
+@media (min-width: 1440px) {
+  #main {
+    padding: 36px 48px 96px;
+  }
+  .days {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1600px) {
+  body {
+    font-size: 15px;
+  }
+  #bar {
+    width: 276px;
+    padding: 24px 18px;
+  }
+  #main {
+    margin-left: 276px;
+    padding: 40px 56px 100px;
+  }
+  .dash-widgets-grid {
+    grid-template-columns: minmax(420px, 1.35fr) minmax(320px, 1fr) minmax(340px, 1fr);
+    gap: 24px;
+  }
+  .assistant-drawer-card {
+    width: 480px;
+    height: 680px;
+  }
+}
+
+@media (min-width: 2100px) {
+  .days {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
   </style>
 </head>
